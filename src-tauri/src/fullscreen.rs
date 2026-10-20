@@ -1,15 +1,15 @@
 use windows::Win32::UI::Shell::SHQueryUserNotificationState;
 
-/// True when the user should not be disturbed: fullscreen app, D3D game, or presentation mode.
-/// QUNS_BUSY(2) / RUNNING_D3D_FULL_SCREEN(3) / PRESENTATION_MODE(4); the raw value is returned
-/// so the PoC can show it. Not covered: QUNS_QUIET_TIME(6) (Focus assist) is left to the user.
-#[tauri::command]
-pub fn notification_state() -> i32 {
-    unsafe { SHQueryUserNotificationState().map(|s| s.0).unwrap_or(-1) }
+/// QUNS_BUSY(2) / RUNNING_D3D_FULL_SCREEN(3) / PRESENTATION_MODE(4).
+/// Not covered: QUNS_QUIET_TIME(6) (Focus assist) is left to the user.
+fn is_busy(state: i32) -> bool {
+    matches!(state, 2..=4)
 }
 
-pub fn is_busy(state: i32) -> bool {
-    matches!(state, 2..=4)
+/// True when the user should not be disturbed: fullscreen app, D3D game, or presentation mode.
+#[tauri::command]
+pub fn is_fullscreen_busy() -> bool {
+    unsafe { SHQueryUserNotificationState().map(|s| is_busy(s.0)).unwrap_or(false) }
 }
 
 #[cfg(test)]

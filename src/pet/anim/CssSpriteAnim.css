@@ -1,0 +1,30 @@
+.sprite {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #7cc4a0;
+  display: grid;
+  place-items: center;
+  font-size: 52px;
+  cursor: grab;
+}
+
+.sprite-idle { animation: bob 2.4s ease-in-out infinite; }
+.sprite-walk { animation: walk 0.8s ease-in-out infinite; }
+.sprite-nag { animation: shake 0.5s ease-in-out infinite; }
+.sprite-sleep { animation: breathe 3.5s ease-in-out infinite; filter: saturate(0.5); }
+
+.zzz {
+  position: absolute;
+  top: -6px;
+  right: -2px;
+  font-size: 18px;
+  font-style: normal;
+  color: #556;
+}
+
+@keyframes bob { 50% { transform: translateY(-4px); } }
+@keyframes walk { 0%, 100% { transform: translateX(-14px) rotate(-4deg); } 50% { transform: translateX(14px) rotate(4deg); } }
+@keyframes shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes breathe { 50% { transform: scale(1.04); } }

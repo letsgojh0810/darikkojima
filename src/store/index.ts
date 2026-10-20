@@ -9,6 +9,15 @@ export async function loadSettings(): Promise<Settings> {
   return { ...defaultSettings, ...saved };
 }
 
+export type Pos = { x: number; y: number };
+
+export const loadPetPos = () => store.get<Pos>("petPos");
+
+export async function savePetPos(p: Pos): Promise<void> {
+  await store.set("petPos", p);
+  await store.save();
+}
+
 export async function saveSettings(s: Settings): Promise<void> {
   await store.set("settings", s);
   await store.save();

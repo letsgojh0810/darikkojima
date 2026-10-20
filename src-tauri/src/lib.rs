@@ -1,4 +1,5 @@
 mod fullscreen;
+mod tray;
 
 use std::sync::Mutex;
 use std::time::Duration;
@@ -21,6 +22,9 @@ fn spawn_click_through_poll(app: tauri::AppHandle) {
         loop {
             std::thread::sleep(Duration::from_millis(40));
             let Some(win) = app.get_webview_window("main") else { continue };
+            if !win.is_visible().unwrap_or(true) {
+                continue;
+            }
             let (Ok(cur), Ok(pos), Ok(scale)) =
                 (win.cursor_position(), win.outer_position(), win.scale_factor())
             else {
@@ -40,10 +44,21 @@ fn spawn_click_through_poll(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // must be first: a second launch just brings the pet back
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.show();
+            }
+        }))
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .manage(HitRect::default())
-        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::notification_state])
+        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy])
         .setup(|app| {
+            tray::setup(app)?;
             spawn_click_through_poll(app.handle().clone());
             Ok(())
         })
