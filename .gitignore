@@ -1,0 +1,9 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+.omc/
+*.key
+*.key.pub
+.env*
+.DS_Store
