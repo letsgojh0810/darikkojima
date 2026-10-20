@@ -6,6 +6,9 @@
 Tauri 2 + React + TypeScript + Vite. Rust는 네이티브(창 제어, 트레이, 전체화면 감지)에만 최소한으로.
 저장: tauri-plugin-store. 플러그인: notification, autostart, updater, single-instance, http. 타깃: Windows 10/11 x64만.
 
+## 성능 목표
+유휴 메모리 작업 관리자 기준 약 150MB 이하 (PoC 실측: WebView2 창 1개로 프라이빗 약 161MB라 100MB는 비현실적), CPU 1% 미만.
+
 ## 구조 원칙
 - `src/scheduler`, `src/calendar`, `src/pet`, `src/native`를 모듈로 분리. 판정 로직(`rules.ts`, `ics.ts`)은 I/O 없는 순수 함수.
 - 애니메이션은 `AnimationLayer` 인터페이스 뒤에 둔다 (나중에 Rive 교체).
