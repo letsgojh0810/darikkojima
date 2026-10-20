@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  background: #fafafa;
+  color: #222;
+  font: 14px/1.5 "Malgun Gothic", sans-serif;
+}
+
+.settings { padding: 8px 20px 24px; }
+.settings h2 { margin: 18px 0 6px; font-size: 14px; color: #555; }
+
+.row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.row > label, .row > span:first-child { flex: 1; }
+.days { gap: 12px; }
+.days label { flex: none; }
+.url span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grow { flex: 1; }
+.err { margin: 2px 0; color: #c0392b; font-size: 12px; }
+
+input[type="number"] { width: 64px; }
+button { cursor: pointer; }

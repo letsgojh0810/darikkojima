@@ -27,8 +27,6 @@ export function PetApp() {
     let s: ReturnType<typeof createScheduler> | undefined;
     loadSettings().then((loaded) => {
       settings = loaded;
-      // dev-only until the settings window exists (step 5): make the legs reminder fire every minute
-      if (import.meta.env.DEV) settings.reminders.legs.intervalMin = 1;
       s = createScheduler({
         getSettings: () => settings!,
         // shortcut: inMeeting is always false until the calendar source lands (step 6)
@@ -38,10 +36,15 @@ export function PetApp() {
       scheduler.current = s;
       s.start();
     });
-    const unlisten = listen<number>("quiet", ({ payload }) => s?.quietFor(payload));
+    const unlistenQuiet = listen<number>("quiet", ({ payload }) => s?.quietFor(payload));
+    const unlistenSettings = listen("settings-changed", async () => {
+      settings = await loadSettings();
+      s?.refresh();
+    });
     return () => {
       s?.stop();
-      unlisten.then((f) => f());
+      unlistenQuiet.then((f) => f());
+      unlistenSettings.then((f) => f());
     };
   }, []);
 

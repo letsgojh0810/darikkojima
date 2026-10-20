@@ -10,4 +10,28 @@ export const reminderMessages: Record<ReminderId, string[]> = {
 export const calendarMessage = (title: string, min: number) =>
   `${min}분 뒤 '${title}'예요. 화장실 미리 다녀오세요`;
 
+export const reminderLabels: Record<ReminderId, string> = {
+  legs: "다리 꼬지 마",
+  posture: "허리 펴기",
+  water: "물 마시기",
+  stretch: "스트레칭",
+};
+
+export const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+export const settingsText = {
+  title: "다리꼬지마 설정",
+  reminders: "리마인더",
+  every: "주기(분)",
+  work: "근무 시간 (선택한 요일에만 알림)",
+  lunch: "점심시간 (알림 없음)",
+  calendar: "캘린더 (ICS 구독 URL)",
+  lead: "일정 사전 알림(분)",
+  urlPlaceholder: "https:// 또는 webcal:// 로 시작하는 ICS 주소",
+  add: "추가",
+  remove: "삭제",
+  badUrl: "올바른 http(s) 주소가 아니에요",
+  autostart: "Windows 시작 시 자동 실행",
+};
+
 export const bubbleButtons = { ok: "확인", snooze: "5분 뒤", skipToday: "오늘은 그만" };
