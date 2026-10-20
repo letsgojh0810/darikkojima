@@ -1,8 +1,8 @@
 [package]
 name = "darikkojima"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "한국 직장인을 위한 데스크탑 펫 리마인더"
+authors = ["hanjh"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -26,6 +26,7 @@ tauri-plugin-store = "2.5.0"
 tauri-plugin-single-instance = "2.5.4"
 tauri-plugin-autostart = "2.7.0"
 tauri-plugin-http = "2.8.3"
+tauri-plugin-updater = "2.14.0"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

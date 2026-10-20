@@ -8,6 +8,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-set-position",
     "store:default",
+    "updater:default",
     {
       "identifier": "http:default",
       "allow": [{ "url": "https://*" }, { "url": "https://*/**" }, { "url": "http://*" }, { "url": "http://*/**" }, { "url": "http://*:*/**" }, { "url": "https://*:*/**" }]

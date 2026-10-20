@@ -9,6 +9,7 @@ import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
 import { loadPetPos, loadSettings, savePetPos } from "../../store";
 import type { ReminderId, Settings } from "../../store/settings";
+import { startAutoUpdate } from "../../updater";
 import "./PetApp.css";
 
 const Anim = CssSpriteAnim;
@@ -57,6 +58,8 @@ export function PetApp() {
       unlistenSettings.then((f) => f());
     };
   }, []);
+
+  useEffect(() => (import.meta.env.DEV ? undefined : startAutoUpdate()), []);
 
   // click-through hit area follows the bubble + pet
   useEffect(() => {

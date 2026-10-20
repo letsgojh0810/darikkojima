@@ -28,9 +28,24 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0ODQ4MUEwMDUyRTM0NjkKUldScE5DNEZvSUdFeEIyT2t6d3UyOVl0WHJhbk96RnN5bnhGQ2ZybTBwbEI5bXpyb0RHa1hmWTIK",
+      "endpoints": ["https://github.com/letsgojh0810/darikkojima/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["Korean"],
+        "displayLanguageSelector": false
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
