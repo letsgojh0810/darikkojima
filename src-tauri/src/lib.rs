@@ -40,6 +40,7 @@ fn spawn_click_through_poll(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .manage(HitRect::default())
         .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::notification_state])
         .setup(|app| {
