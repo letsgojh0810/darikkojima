@@ -84,5 +84,10 @@ export function createScheduler(d: SchedulerDeps) {
     quietFor(minutes: number) {
       quietUntil = Date.now() + minutes * MIN;
     },
+    /** same gate the reminders go through, for alerts that are not scheduled here (calendar) */
+    async canNotify(kind: RuleContext["kind"]) {
+      const env = await d.getEnv();
+      return !blockReason({ now: new Date(), settings: d.getSettings(), kind, quietUntil, ...env });
+    },
   };
 }

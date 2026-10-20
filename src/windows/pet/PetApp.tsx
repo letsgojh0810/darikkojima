@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
+import { createCalendar } from "../../calendar/calendar";
 import { isFullscreenBusy, setHitRect } from "../../native";
 import { CssSpriteAnim } from "../../pet/anim/CssSpriteAnim";
 import { SpeechBubble } from "../../pet/SpeechBubble";
@@ -11,7 +12,8 @@ import type { ReminderId, Settings } from "../../store/settings";
 import "./PetApp.css";
 
 const Anim = CssSpriteAnim;
-type Pending = { id: ReminderId; message: string };
+/** `id` is set for recurring reminders (snooze / skip-today apply); calendar alerts have none */
+type Pending = { id?: ReminderId; message: string };
 
 export function PetApp() {
   const stage = useRef<HTMLDivElement>(null);
@@ -25,24 +27,32 @@ export function PetApp() {
   useEffect(() => {
     let settings: Settings | undefined;
     let s: ReturnType<typeof createScheduler> | undefined;
+    let cal: ReturnType<typeof createCalendar> | undefined;
     loadSettings().then((loaded) => {
       settings = loaded;
       s = createScheduler({
         getSettings: () => settings!,
-        // shortcut: inMeeting is always false until the calendar source lands (step 6)
-        getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: false }),
+        getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: cal?.inMeeting() ?? false }),
         onFire: (id, message) => setQueue((q) => [...q, { id, message }]),
+      });
+      cal = createCalendar({
+        getSettings: () => settings!,
+        canAlert: () => s!.canNotify("calendar"),
+        onAlert: (message) => setQueue((q) => [...q, { message }]),
       });
       scheduler.current = s;
       s.start();
+      cal.start();
     });
     const unlistenQuiet = listen<number>("quiet", ({ payload }) => s?.quietFor(payload));
     const unlistenSettings = listen("settings-changed", async () => {
       settings = await loadSettings();
       s?.refresh();
+      cal?.refresh();
     });
     return () => {
       s?.stop();
+      cal?.stop();
       unlistenQuiet.then((f) => f());
       unlistenSettings.then((f) => f());
     };
@@ -73,7 +83,7 @@ export function PetApp() {
   }, []);
 
   const close = (act?: (id: ReminderId) => void) => {
-    act?.(current.id);
+    if (act && current.id) act(current.id);
     setQueue((q) => q.slice(1));
     setActivity((n) => n + 1);
   };
@@ -84,8 +94,8 @@ export function PetApp() {
         <SpeechBubble
           message={current.message}
           onOk={() => close()}
-          onSnooze={() => close((id) => scheduler.current?.snooze(id))}
-          onSkipToday={() => close((id) => scheduler.current?.skipToday(id))}
+          onSnooze={current.id ? () => close((id) => scheduler.current?.snooze(id)) : undefined}
+          onSkipToday={current.id ? () => close((id) => scheduler.current?.skipToday(id)) : undefined}
         />
       )}
       <div

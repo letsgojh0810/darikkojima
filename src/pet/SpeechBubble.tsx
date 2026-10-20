@@ -4,8 +4,9 @@ import "./SpeechBubble.css";
 export interface BubbleProps {
   message: string;
   onOk(): void;
-  onSnooze(): void;
-  onSkipToday(): void;
+  /** omitted for one-off alerts (calendar), which only offer "확인" */
+  onSnooze?(): void;
+  onSkipToday?(): void;
 }
 
 export function SpeechBubble({ message, onOk, onSnooze, onSkipToday }: BubbleProps) {
@@ -14,8 +15,8 @@ export function SpeechBubble({ message, onOk, onSnooze, onSkipToday }: BubblePro
       <p>{message}</p>
       <div className="bubble-actions">
         <button onClick={onOk}>{bubbleButtons.ok}</button>
-        <button onClick={onSnooze}>{bubbleButtons.snooze}</button>
-        <button onClick={onSkipToday}>{bubbleButtons.skipToday}</button>
+        {onSnooze && <button onClick={onSnooze}>{bubbleButtons.snooze}</button>}
+        {onSkipToday && <button onClick={onSkipToday}>{bubbleButtons.skipToday}</button>}
       </div>
     </div>
   );
