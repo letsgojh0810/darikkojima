@@ -15,12 +15,12 @@ fn set_hit_rect(state: State<HitRect>, x: f64, y: f64, w: f64, h: f64) {
 }
 
 // Window-wide ignore is the only click-through primitive Tauri offers, so poll the cursor
-// and flip it. shortcut: fixed 40ms poll, pause it while the pet is hidden once tray lands.
+// and flip it. shortcut: fixed 100ms poll (40ms cost ~1.4% of a core); skipped while the pet is hidden.
 fn spawn_click_through_poll(app: tauri::AppHandle) {
     std::thread::spawn(move || {
         let mut ignoring = None;
         loop {
-            std::thread::sleep(Duration::from_millis(40));
+            std::thread::sleep(Duration::from_millis(100));
             let Some(win) = app.get_webview_window("main") else { continue };
             if !win.is_visible().unwrap_or(true) {
                 continue;

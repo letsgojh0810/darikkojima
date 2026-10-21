@@ -10,10 +10,10 @@
   cursor: grab;
 }
 
-.sprite-idle { animation: bob 2.4s ease-in-out infinite; }
+/* idle and sleep stay static on purpose: an endless animation on a transparent window kept the GPU process at ~5% CPU */
 .sprite-walk { animation: walk 0.8s ease-in-out infinite; }
-.sprite-nag { animation: shake 0.5s ease-in-out infinite; }
-.sprite-sleep { animation: breathe 3.5s ease-in-out infinite; filter: saturate(0.5); }
+.sprite-nag { animation: shake 0.5s ease-in-out 6; }
+.sprite-sleep { filter: saturate(0.5); }
 
 .zzz {
   position: absolute;
@@ -24,7 +24,5 @@
   color: #556;
 }
 
-@keyframes bob { 50% { transform: translateY(-4px); } }
 @keyframes walk { 0%, 100% { transform: translateX(-14px) rotate(-4deg); } 50% { transform: translateX(14px) rotate(4deg); } }
 @keyframes shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
-@keyframes breathe { 50% { transform: scale(1.04); } }
