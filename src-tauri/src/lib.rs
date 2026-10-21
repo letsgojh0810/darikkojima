@@ -14,6 +14,16 @@ fn set_hit_rect(state: State<HitRect>, x: f64, y: f64, w: f64, h: f64) {
     *state.0.lock().unwrap() = (x, y, w, h);
 }
 
+#[tauri::command]
+fn open_settings(app: tauri::AppHandle) {
+    tray::open_settings(&app);
+}
+
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 // Window-wide ignore is the only click-through primitive Tauri offers, so poll the cursor
 // and flip it. shortcut: fixed 100ms poll (40ms cost ~1.4% of a core); skipped while the pet is hidden.
 fn spawn_click_through_poll(app: tauri::AppHandle) {
@@ -58,7 +68,7 @@ pub fn run() {
             None,
         ))
         .manage(HitRect::default())
-        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy])
+        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy, open_settings, quit_app])
         .setup(|app| {
             tray::setup(app)?;
             spawn_click_through_poll(app.handle().clone());

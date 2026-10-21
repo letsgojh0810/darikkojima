@@ -2,14 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
-import { isFullscreenBusy, setHitRect } from "../../native";
+import { clickQuips, petMenuText, petQuips } from "../../messages/ko";
+import { isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
 import { CssSpriteAnim } from "../../pet/anim/CssSpriteAnim";
+import type { PetState } from "../../pet/anim/types";
+import { PetMenu } from "../../pet/PetMenu";
 import { SpeechBubble } from "../../pet/SpeechBubble";
 import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
 import { loadPetPos, loadSettings, savePetPos } from "../../store";
 import type { ReminderId, Settings } from "../../store/settings";
 import { startAutoUpdate } from "../../updater";
+import "../../tokens.css";
 import "./PetApp.css";
 
 const Anim = CssSpriteAnim;
@@ -22,7 +26,16 @@ export function PetApp() {
   const [queue, setQueue] = useState<Pending[]>([]);
   const [activity, setActivity] = useState(0);
   const current = queue[0];
-  const state = usePetState(!!current, activity);
+  const base = usePetState(!!current, activity);
+  const [hover, setHover] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const [quip, setQuip] = useState<string>();
+  const [menu, setMenu] = useState(false);
+  const pressAt = useRef<{ x: number; y: number } | null>(null);
+  const [clickCount, setClickCount] = useState(0);
+  const quipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const state: PetState = clicked ? "click" : hover && base !== "nag" ? "hover" : base;
 
   // scheduler: needs settings first
   useEffect(() => {
@@ -91,6 +104,39 @@ export function PetApp() {
     setActivity((n) => n + 1);
   };
 
+  const say = (text: string) => {
+    clearTimeout(quipTimer.current);
+    setQuip(text);
+    quipTimer.current = setTimeout(() => setQuip(undefined), 2500);
+  };
+
+  // a press that never moved is a click; moving past 4px turns it into a window drag
+  const poke = () => {
+    setActivity((n) => n + 1);
+    setMenu(false);
+    clearTimeout(clickTimer.current);
+    setClicked(true);
+    setClickCount((n) => n + 1); // remounts the sprite so a second click replays the hop
+    clickTimer.current = setTimeout(() => setClicked(false), 500);
+    say(clickQuips[Math.floor(Math.random() * clickQuips.length)]);
+  };
+
+  // the right-click menu is the only way to settings besides the tray, so mention it once
+  useEffect(() => {
+    if (localStorage.getItem("menuHintSeen")) return;
+    const t = setTimeout(() => {
+      say(petQuips.menuHint);
+      localStorage.setItem("menuHintSeen", "1");
+    }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!menu) return;
+    const t = setTimeout(() => setMenu(false), 8000); // the menu is also closed on mouse leave
+    return () => clearTimeout(t);
+  }, [menu]);
+
   return (
     <div className="stage" ref={stage}>
       {current && (
@@ -98,17 +144,63 @@ export function PetApp() {
           message={current.message}
           onOk={() => close()}
           onSnooze={current.id ? () => close((id) => scheduler.current?.snooze(id)) : undefined}
-          onSkipToday={current.id ? () => close((id) => scheduler.current?.skipToday(id)) : undefined}
+          onSkipToday={
+            current.id
+              ? () => {
+                  close((id) => scheduler.current?.skipToday(id));
+                  say(petQuips.skipped);
+                }
+              : undefined
+          }
+        />
+      )}
+      {!current && quip && <div className="toast">{quip}</div>}
+      {menu && (
+        <PetMenu
+          onClose={() => setMenu(false)}
+          items={[
+            { label: petMenuText.settings, onSelect: openSettings },
+            {
+              label: petMenuText.quiet,
+              onSelect: () => {
+                scheduler.current?.quietFor(60);
+                say(petQuips.quiet);
+              },
+            },
+            { label: petMenuText.quit, onSelect: quitApp, danger: true },
+          ]}
         />
       )}
       <div
+        onMouseEnter={() => {
+          setHover(true);
+          setActivity((n) => n + 1);
+        }}
+        onMouseLeave={() => {
+          setHover(false);
+          pressAt.current = null;
+        }}
         onMouseDown={(e) => {
-          if (e.button !== 0) return;
+          if (e.button === 0) pressAt.current = { x: e.clientX, y: e.clientY };
+        }}
+        onMouseMove={(e) => {
+          const p = pressAt.current;
+          if (!p || e.buttons !== 1 || Math.hypot(e.clientX - p.x, e.clientY - p.y) < 4) return;
+          pressAt.current = null;
           setActivity((n) => n + 1);
           getCurrentWindow().startDragging();
         }}
+        onMouseUp={(e) => {
+          if (e.button !== 0 || !pressAt.current) return;
+          pressAt.current = null;
+          poke();
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenu(true);
+        }}
       >
-        <Anim state={state} />
+        <Anim key={clickCount} state={state} />
       </div>
     </div>
   );

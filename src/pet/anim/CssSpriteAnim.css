@@ -1,28 +1,34 @@
 .sprite {
   position: relative;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: #7cc4a0;
-  display: grid;
-  place-items: center;
-  font-size: 52px;
-  cursor: grab;
+  width: 120px;
+  height: 100px;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
 }
 
+.sprite svg { display: block; }
+
 /* idle and sleep stay static on purpose: an endless animation on a transparent window kept the GPU process at ~5% CPU */
-.sprite-walk { animation: walk 0.8s ease-in-out infinite; }
+.sprite-hover { transform: translateY(-3px) scale(1.06); }
+.sprite-walk { animation: walk 1.6s ease-in-out infinite; }
 .sprite-nag { animation: shake 0.5s ease-in-out 6; }
-.sprite-sleep { filter: saturate(0.5); }
+.sprite-click { animation: hop 0.5s ease-out 1; }
+.sprite:active { cursor: grabbing; }
 
 .zzz {
   position: absolute;
-  top: -6px;
-  right: -2px;
-  font-size: 18px;
+  top: 4px;
+  right: 2px;
+  font: 700 18px/1 var(--font);
   font-style: normal;
-  color: #556;
+  color: #8b95a1;
 }
 
-@keyframes walk { 0%, 100% { transform: translateX(-14px) rotate(-4deg); } 50% { transform: translateX(14px) rotate(4deg); } }
+@keyframes walk { 0%, 100% { transform: translateX(-14px) rotate(-3deg); } 50% { transform: translateX(14px) rotate(3deg); } }
 @keyframes shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes hop {
+  0% { transform: translateY(0) scale(1.06); }
+  35% { transform: translateY(-22px) scale(0.96, 1.08); }
+  70% { transform: translateY(0) scale(1.1, 0.88); }
+  100% { transform: translateY(0) scale(1.06); }
+}

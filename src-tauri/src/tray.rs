@@ -2,7 +2,7 @@ use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
-fn open_settings(app: &tauri::AppHandle) {
+pub fn open_settings(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("settings") {
         let _ = w.show();
         let _ = w.set_focus();
@@ -13,7 +13,7 @@ fn open_settings(app: &tauri::AppHandle) {
     std::thread::spawn(move || {
         let _ = WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings.html".into()))
             .title("다리꼬지마 설정")
-            .inner_size(480.0, 680.0)
+            .inner_size(760.0, 560.0)
             .build();
     });
 }

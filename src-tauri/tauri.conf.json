@@ -14,8 +14,8 @@
       {
         "label": "main",
         "title": "다리꼬지마",
-        "width": 300,
-        "height": 300,
+        "width": 340,
+        "height": 400,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,
