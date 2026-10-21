@@ -89,7 +89,7 @@ CLI로 등록하려면:
 
 ```powershell
 Get-Content $env:USERPROFILE\.tauri\darikkojima.key -Raw | gh secret set TAURI_SIGNING_PRIVATE_KEY
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --body ""
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD   # 비밀번호가 없으면 이 줄은 건너뜁니다 (secret이 없으면 빈 값으로 처리됩니다)
 ```
 
 ### 3. 버전을 올리고 태그 push
