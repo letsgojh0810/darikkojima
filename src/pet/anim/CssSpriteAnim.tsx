@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import type { PetAnimation } from "./types";
+import { useBlink } from "./useBlink";
 import "./CssSpriteAnim.css";
 
 // Flat turtle in the Toss palette: colour planes only, no outlines. Expressions are swapped per state, never animated.
@@ -18,28 +18,11 @@ const C = {
 const line = { fill: "none", stroke: C.ink, strokeWidth: 2, strokeLinecap: "round" as const };
 
 export const CssSpriteAnim: PetAnimation = ({ state }) => {
-  const [blink, setBlink] = useState(false);
-
-  // blink every 3-6s while awake; two renders per blink, no endless animation
-  useEffect(() => {
-    if (state !== "idle" && state !== "walk") return;
-    let t: ReturnType<typeof setTimeout>;
-    const next = () => {
-      t = setTimeout(() => {
-        setBlink(true);
-        t = setTimeout(() => {
-          setBlink(false);
-          next();
-        }, 150);
-      }, 3000 + Math.random() * 3000);
-    };
-    next();
-    return () => clearTimeout(t);
-  }, [state]);
+  const blink = useBlink(state);
 
   const asleep = state === "sleep";
   const nag = state === "nag";
-  const joy = state === "hover" || state === "click";
+  const joy = state === "hover" || state === "click" || state === "drag";
   const headY = asleep ? 3 : state === "click" ? -3 : 0;
 
   const eye = asleep || blink ? (
@@ -68,13 +51,15 @@ export const CssSpriteAnim: PetAnimation = ({ state }) => {
   );
 
   return (
-    <div className={`sprite sprite-${state}`}>
+    <div className={`sprite sprite-${state} pet-turtle`}>
       <svg width="120" height="100" viewBox="0 0 120 100">
         <ellipse cx="58" cy="94" rx="38" ry="4" fill="rgba(0,0,0,0.12)" />
+        {/* dragging = swimming: waves slide under the body */}
+        {state === "drag" && <path className="wave" d="M-20 90 q10 -7 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" fill="none" stroke={C.sweat} strokeWidth="3" strokeLinecap="round" />}
         {/* tail and legs */}
         <path d="M24 78 L10 83 L24 87 Z" fill={C.skinDark} strokeLinejoin="round" stroke={C.skinDark} strokeWidth="3" />
-        <rect x="30" y="76" width="16" height="16" rx="8" fill={C.skinDark} />
-        <rect x="70" y="76" width="16" height="16" rx="8" fill={C.skin} />
+        <rect className="leg" x="30" y="76" width="16" height="16" rx="8" fill={C.skinDark} />
+        <rect className="leg b" x="70" y="76" width="16" height="16" rx="8" fill={C.skin} />
         {/* belly strip under the shell */}
         <rect x="20" y="72" width="78" height="16" rx="8" fill={C.skinDark} />
         {/* head */}

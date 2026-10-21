@@ -1,17 +1,24 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { normalizeIcsUrl } from "../../calendar/url";
-import { dayLabels, reminderLabels, settingsText as t } from "../../messages/ko";
+import { dayLabels, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
 import { loadSettings, saveSettings } from "../../store";
 import type { CustomReminder, ReminderId, Settings } from "../../store/settings";
+import { petIds, pets } from "../../pet/anim/pets";
 import "../../tokens.css";
 import "./SettingsApp.css";
 
 const ids = Object.keys(reminderLabels) as ReminderId[];
 /** Monday first; the stored values stay Date#getDay (0 = Sunday). */
 const dayOrder = [1, 2, 3, 4, 5, 6, 0];
+/** Add a tab here and a matching `tab === id` block below; the footer's 저장/취소 covers every tab. */
+const tabs = [
+  { id: "general", label: t.tabGeneral },
+  { id: "pet", label: t.tabPet },
+] as const;
+type TabId = (typeof tabs)[number]["id"];
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange(v: boolean): void }) {
   return (
@@ -82,6 +89,15 @@ export function SettingsApp() {
   const [url, setUrl] = useState("");
   const [badUrl, setBadUrl] = useState(false);
   const [newText, setNewText] = useState("");
+  const [tab, setTab] = useState<TabId>("general");
+
+  // closing without saving (X or 취소) tells the pet window to drop the preview and reload what is stored
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onCloseRequested(() => emit("settings-changed"));
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
@@ -90,6 +106,12 @@ export function SettingsApp() {
       setSaved({ s: loaded, auto: on });
     });
   }, []);
+
+  const pet = s?.pet;
+  const petScale = s?.petScale;
+  useEffect(() => {
+    if (pet !== undefined && petScale !== undefined) emit("pet-preview", { pet, petScale });
+  }, [pet, petScale]);
   if (!s || !saved) return null;
 
   const update = setS;
@@ -137,6 +159,15 @@ export function SettingsApp() {
         <h1>{t.title}</h1>
       </header>
 
+      <nav className="tabs" role="tablist">
+        {tabs.map((x) => (
+          <button key={x.id} role="tab" aria-selected={tab === x.id} className="tab" onClick={() => setTab(x.id)}>
+            {x.label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "general" && (
       <div className="cols">
         <div className="col">
           <Group title={t.reminders}>
@@ -235,6 +266,41 @@ export function SettingsApp() {
           </Group>
         </div>
       </div>
+      )}
+
+      {tab === "pet" && (
+        <section className="pet-tab">
+          <h2>{t.pickPet}</h2>
+          <div className="pets">
+            {petIds.map((id) => {
+              const Anim = pets[id];
+              return (
+                <button key={id} className="pet-card" aria-pressed={s.pet === id} onClick={() => update({ ...s, pet: id })}>
+                  <Anim state="idle" />
+                  <span>{petNames[id] ?? id}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <h2>{t.petSize}</h2>
+          <div className="group">
+            <div className="row">
+              <input
+                type="range"
+                aria-label={t.petSize}
+                min={50}
+                max={150}
+                step={5}
+                value={Math.round(s.petScale * 100)}
+                style={{ "--pct": `${s.petScale * 100 - 50}%` } as CSSProperties}
+                onChange={(e) => update({ ...s, petScale: Number(e.target.value) / 100 })}
+              />
+              <span className="pct">{Math.round(s.petScale * 100)}%</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       <footer>
         <button className="secondary" onClick={() => getCurrentWindow().close()}>

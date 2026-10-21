@@ -9,6 +9,58 @@ body {
 /* two columns so everything is visible at once; compact controls leave breathing room around them */
 .settings { display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh; padding: 28px 32px 24px; }
 h1 { margin: 0 4px 4px; font-size: 20px; line-height: 28px; font-weight: 700; }
+.tabs { display: flex; gap: 20px; margin: 4px 4px 0; border-bottom: 1px solid var(--line); }
+.tab { height: 40px; padding: 0 2px; margin-bottom: -1px; border-bottom: 2px solid transparent; background: none; color: var(--text-3); font-weight: 600; }
+.tab:hover { color: var(--text-2); }
+.tab[aria-selected="true"] { border-bottom-color: var(--blue); color: var(--text-1); }
+.tab:active { transform: none; }
+
+.pet-tab { flex: 1; }
+.pet-tab h2 { margin-top: 20px; }
+.pets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.pet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 8px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-1);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px transparent;
+}
+.pet-card:hover { background: color-mix(in srgb, var(--surface), var(--text-1) 4%); }
+.pet-card[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--blue); }
+.pet-card .sprite { pointer-events: none; }
+
+/* slider: the filled part is a gradient on the track, so the generic input hover/focus rules must not repaint the input itself */
+input[type="range"], input[type="range"]:hover, input[type="range"]:focus {
+  flex: 1;
+  height: 20px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  appearance: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--blue) var(--pct), var(--disabled) var(--pct));
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focus-ring), 0 1px 4px rgba(0, 0, 0, 0.3); }
+.pct { flex: none; width: 44px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
 .cols { display: grid; flex: 1; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
 .col section { margin-top: 20px; }
 h2 { margin: 0; padding: 0 4px 8px; color: var(--text-3); font: 600 12px/16px var(--font); }

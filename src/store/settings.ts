@@ -9,6 +9,10 @@ export interface CustomReminder {
 }
 
 export interface Settings {
+  /** id of the character, see pet/anim/pets.ts */
+  pet: string;
+  /** 0.5 to 1.5, 1 = the drawn size */
+  petScale: number;
   reminders: Record<ReminderId, { enabled: boolean; intervalMin: number }>;
   custom: CustomReminder[];
   /** "HH:MM"; days use Date#getDay (0=Sun) */
@@ -19,6 +23,8 @@ export interface Settings {
 }
 
 export const defaultSettings: Settings = {
+  pet: "turtle",
+  petScale: 1,
   reminders: {
     legs: { enabled: true, intervalMin: 30 },
     posture: { enabled: true, intervalMin: 45 },

@@ -13,7 +13,7 @@ pub fn open_settings(app: &tauri::AppHandle) {
     std::thread::spawn(move || {
         let _ = WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings.html".into()))
             .title("다리꼬지마 설정")
-            .inner_size(800.0, 600.0)
+            .inner_size(800.0, 660.0)
             .build();
     });
 }

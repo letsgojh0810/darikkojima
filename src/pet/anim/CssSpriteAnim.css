@@ -15,6 +15,19 @@
 .sprite-click { animation: hop 0.5s ease-out 1; }
 .sprite:active { cursor: grabbing; }
 
+/* dragging: each pet moves its own way. Endless, but only while the window is actually being moved. */
+.pet-turtle.sprite-drag { animation: swim 0.9s ease-in-out infinite; }
+.pet-cat.sprite-drag { animation: trot 0.5s ease-in-out infinite; }
+.pet-dog.sprite-drag { animation: run 0.35s ease-in-out infinite; }
+.pet-rabbit.sprite-drag { animation: leap 0.5s ease-out infinite; }
+
+.sprite-drag .leg { animation: paw 0.25s ease-in-out infinite alternate; }
+.sprite-drag .leg.b { animation-delay: -0.125s; }
+.pet-turtle.sprite-drag .leg { animation: paddle 0.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 20%; }
+.pet-turtle.sprite-drag .leg.b { animation-delay: -0.2s; }
+.sprite-drag .tail { animation: wag 0.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 0% 100%; }
+.wave { animation: wave 0.8s linear infinite; }
+
 .zzz {
   position: absolute;
   top: 4px;
@@ -24,6 +37,14 @@
   color: #8b95a1;
 }
 
+@keyframes swim { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+@keyframes trot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px) rotate(-2deg); } }
+@keyframes run { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-6px) rotate(-3deg); } }
+@keyframes leap { 0%, 100% { transform: translateY(0) scale(1.08, 0.9); } 50% { transform: translateY(-16px) scale(0.95, 1.08); } }
+@keyframes paw { to { transform: translateY(-4px); } }
+@keyframes paddle { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
+@keyframes wag { from { transform: rotate(-15deg); } to { transform: rotate(15deg); } }
+@keyframes wave { to { transform: translateX(20px); } }
 @keyframes walk { 0%, 100% { transform: translateX(-14px) rotate(-3deg); } 50% { transform: translateX(14px) rotate(3deg); } }
 @keyframes shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
 @keyframes hop {

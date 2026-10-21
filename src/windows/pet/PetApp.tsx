@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
-import { clickQuips, petMenuText, petQuips } from "../../messages/ko";
+import { petMenuText, petQuips, quipsFor } from "../../messages/ko";
 import { isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
-import { CssSpriteAnim } from "../../pet/anim/CssSpriteAnim";
+import { pets } from "../../pet/anim/pets";
 import type { PetState } from "../../pet/anim/types";
 import { PetMenu } from "../../pet/PetMenu";
 import { SpeechBubble } from "../../pet/SpeechBubble";
@@ -16,7 +16,6 @@ import { startAutoUpdate } from "../../updater";
 import "../../tokens.css";
 import "./PetApp.css";
 
-const Anim = CssSpriteAnim;
 /** `id` is set for recurring reminders (snooze / skip-today apply); calendar alerts have none */
 type Pending = { id?: string; message: string };
 
@@ -35,7 +34,11 @@ export function PetApp() {
   const [clickCount, setClickCount] = useState(0);
   const quipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const state: PetState = clicked ? "click" : hover && base !== "nag" ? "hover" : base;
+  const [dragging, setDragging] = useState(false);
+  const state: PetState = dragging ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base;
+  const [petId, setPetId] = useState("turtle");
+  const Anim = pets[petId] ?? pets.turtle;
+  const [petScale, setPetScale] = useState(1);
 
   // scheduler: needs settings first
   useEffect(() => {
@@ -44,6 +47,8 @@ export function PetApp() {
     let cal: ReturnType<typeof createCalendar> | undefined;
     loadSettings().then((loaded) => {
       settings = loaded;
+      setPetId(loaded.pet);
+      setPetScale(loaded.petScale);
       s = createScheduler({
         getSettings: () => settings!,
         getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: cal?.inMeeting() ?? false }),
@@ -61,12 +66,20 @@ export function PetApp() {
     const unlistenQuiet = listen<number>("quiet", ({ payload }) => s?.quietFor(payload));
     const unlistenSettings = listen("settings-changed", async () => {
       settings = await loadSettings();
+      setPetId(settings.pet);
+      setPetScale(settings.petScale);
       s?.refresh();
       cal?.refresh();
+    });
+    // the settings window previews pet / size while the slider moves; cancel or close sends settings-changed to revert
+    const unlistenPreview = listen<{ pet: string; petScale: number }>("pet-preview", ({ payload }) => {
+      setPetId(payload.pet);
+      setPetScale(payload.petScale);
     });
     return () => {
       s?.stop();
       cal?.stop();
+      unlistenPreview.then((f) => f());
       unlistenQuiet.then((f) => f());
       unlistenSettings.then((f) => f());
     };
@@ -86,14 +99,25 @@ export function PetApp() {
   useEffect(() => {
     const win = getCurrentWindow();
     let saveTimer: ReturnType<typeof setTimeout>;
+    let dragTimer: ReturnType<typeof setTimeout>;
+    let ignoreUntil = Infinity; // the move that restores the saved position is not a drag
     // shortcut: no on-screen check, a saved position on a removed monitor strands the pet; add with the tray "show" reset
-    loadPetPos().then((p) => p && win.setPosition(new PhysicalPosition(p.x, p.y)));
+    loadPetPos().then(async (p) => {
+      if (p) await win.setPosition(new PhysicalPosition(p.x, p.y));
+      ignoreUntil = Date.now() + 500;
+    });
     const unlisten = win.onMoved(({ payload }) => {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => savePetPos({ x: payload.x, y: payload.y }), 500);
+      // there is no mouse-up after startDragging, so "the window stopped moving" ends the drag
+      if (Date.now() < ignoreUntil) return;
+      setDragging(true);
+      clearTimeout(dragTimer);
+      dragTimer = setTimeout(() => setDragging(false), 250);
     });
     return () => {
       clearTimeout(saveTimer);
+      clearTimeout(dragTimer);
       unlisten.then((f) => f());
     };
   }, []);
@@ -118,7 +142,8 @@ export function PetApp() {
     setClicked(true);
     setClickCount((n) => n + 1); // remounts the sprite so a second click replays the hop
     clickTimer.current = setTimeout(() => setClicked(false), 500);
-    say(clickQuips[Math.floor(Math.random() * clickQuips.length)]);
+    const quips = quipsFor(petId);
+    say(quips[Math.floor(Math.random() * quips.length)]);
   };
 
   // the right-click menu is the only way to settings besides the tray, so mention it once
@@ -171,7 +196,9 @@ export function PetApp() {
           ]}
         />
       )}
+      {/* zoom (unlike transform) changes layout size, so the click-through hit rect follows it */}
       <div
+        style={{ zoom: petScale }}
         onMouseEnter={() => {
           setHover(true);
           setActivity((n) => n + 1);
