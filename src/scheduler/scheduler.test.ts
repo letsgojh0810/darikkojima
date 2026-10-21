@@ -25,6 +25,25 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("scheduler", () => {
+  it("fires a custom reminder with its own text, and skips a disabled one", async () => {
+    vi.setSystemTime(new Date("2026-10-20T10:00:00"));
+    const base = only("water", 1);
+    const settings: Settings = {
+      ...base,
+      reminders: { ...base.reminders, water: { enabled: false, intervalMin: 1 } },
+      custom: [
+        { id: "c1", text: "약 먹을 시간이에요", enabled: true, intervalMin: 2 },
+        { id: "c2", text: "꺼진 것", enabled: false, intervalMin: 1 },
+      ],
+    };
+    const fired: [string, string][] = [];
+    const s = createScheduler({ getSettings: () => settings, getEnv: () => ({ fullscreen: false, inMeeting: false }), onFire: (id, m) => fired.push([id, m]) });
+    s.start();
+    await vi.advanceTimersByTimeAsync(2 * MIN);
+    expect(fired).toEqual([["c1", "약 먹을 시간이에요"]]);
+    s.stop();
+  });
+
   it("fires after the interval, then repeats", async () => {
     const { s, fired } = setup("2026-10-20T10:00:00");
     s.start();

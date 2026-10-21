@@ -11,14 +11,14 @@ import { SpeechBubble } from "../../pet/SpeechBubble";
 import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
 import { loadPetPos, loadSettings, savePetPos } from "../../store";
-import type { ReminderId, Settings } from "../../store/settings";
+import type { Settings } from "../../store/settings";
 import { startAutoUpdate } from "../../updater";
 import "../../tokens.css";
 import "./PetApp.css";
 
 const Anim = CssSpriteAnim;
 /** `id` is set for recurring reminders (snooze / skip-today apply); calendar alerts have none */
-type Pending = { id?: ReminderId; message: string };
+type Pending = { id?: string; message: string };
 
 export function PetApp() {
   const stage = useRef<HTMLDivElement>(null);
@@ -98,7 +98,7 @@ export function PetApp() {
     };
   }, []);
 
-  const close = (act?: (id: ReminderId) => void) => {
+  const close = (act?: (id: string) => void) => {
     if (act && current.id) act(current.id);
     setQueue((q) => q.slice(1));
     setActivity((n) => n + 1);

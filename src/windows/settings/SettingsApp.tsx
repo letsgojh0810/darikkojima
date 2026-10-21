@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { emit } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { normalizeIcsUrl } from "../../calendar/url";
 import { dayLabels, reminderLabels, settingsText as t } from "../../messages/ko";
 import { loadSettings, saveSettings } from "../../store";
-import type { ReminderId, Settings } from "../../store/settings";
+import type { CustomReminder, ReminderId, Settings } from "../../store/settings";
 import "../../tokens.css";
 import "./SettingsApp.css";
 
@@ -30,11 +31,12 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ label, desc, children }: { label?: string; desc?: string; children?: ReactNode }) {
+/** `stack` puts the control under the label at full width (time ranges would be clipped beside it). */
+function Row({ label, desc, stack, ellipsis, children }: { label?: string; desc?: string; stack?: boolean; ellipsis?: boolean; children?: ReactNode }) {
   return (
-    <div className="row">
+    <div className={stack ? "row stack" : "row"}>
       <div className="text">
-        {label && <div className="label">{label}</div>}
+        {label && <div className={ellipsis ? "label ellipsis" : "label"} title={ellipsis ? label : undefined}>{label}</div>}
         {desc && <div className="desc">{desc}</div>}
       </div>
       {children}
@@ -73,20 +75,45 @@ function TimeRange({ start, end, onChange }: { start: string; end: string; onCha
 }
 
 export function SettingsApp() {
+  // edits stay in this draft until 저장; closing the window or 취소 throws them away
   const [s, setS] = useState<Settings>();
+  const [saved, setSaved] = useState<{ s: Settings; auto: boolean }>();
   const [auto, setAuto] = useState(false);
   const [url, setUrl] = useState("");
   const [badUrl, setBadUrl] = useState(false);
+  const [newText, setNewText] = useState("");
 
   useEffect(() => {
-    loadSettings().then(setS);
-    isEnabled().then(setAuto);
+    Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
+      setS(loaded);
+      setAuto(on);
+      setSaved({ s: loaded, auto: on });
+    });
   }, []);
-  if (!s) return null;
+  if (!s || !saved) return null;
 
-  const update = (next: Settings) => {
-    setS(next);
-    saveSettings(next).then(() => emit("settings-changed"));
+  const update = setS;
+  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || auto !== saved.auto || !!url.trim() || !!newText.trim();
+
+  const newCustom = (): CustomReminder[] => {
+    const text = newText.trim();
+    return text ? [...s.custom, { id: crypto.randomUUID(), text, enabled: true, intervalMin: 30 }] : s.custom;
+  };
+  const addCustom = () => {
+    update({ ...s, custom: newCustom() });
+    setNewText("");
+  };
+  const setCustom = (id: string, patch: Partial<CustomReminder>) =>
+    update({ ...s, custom: s.custom.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+
+  const save = async () => {
+    // text typed but not yet added would be lost silently, so take it along
+    const pending = normalizeIcsUrl(url);
+    const next = { ...s, custom: newCustom(), icsUrls: pending && !s.icsUrls.includes(pending) ? [...s.icsUrls, pending] : s.icsUrls };
+    await saveSettings(next);
+    if (auto !== saved.auto) await (auto ? enable() : disable());
+    await emit("settings-changed");
+    await getCurrentWindow().close();
   };
   const setReminder = (id: ReminderId, patch: Partial<Settings["reminders"][ReminderId]>) =>
     update({ ...s, reminders: { ...s.reminders, [id]: { ...s.reminders[id], ...patch } } });
@@ -108,7 +135,6 @@ export function SettingsApp() {
     <main className="settings">
       <header>
         <h1>{t.title}</h1>
-        <p className="sub">{t.autoSave}</p>
       </header>
 
       <div className="cols">
@@ -123,18 +149,43 @@ export function SettingsApp() {
                 <Switch checked={s.reminders[id].enabled} label={reminderLabels[id]} onChange={(v) => setReminder(id, { enabled: v })} />
               </Row>
             ))}
+            {s.custom.map((c) => (
+              <Row key={c.id} label={c.text} ellipsis>
+                <span className="unit">
+                  <NumberField value={c.intervalMin} min={1} max={480} onCommit={(n) => setCustom(c.id, { intervalMin: n })} />
+                  {t.every}
+                </span>
+                <Switch checked={c.enabled} label={c.text} onChange={(v) => setCustom(c.id, { enabled: v })} />
+                <button className="remove" title={t.remove} onClick={() => update({ ...s, custom: s.custom.filter((x) => x.id !== c.id) })}>
+                  {t.remove}
+                </button>
+              </Row>
+            ))}
+            <div className="row">
+              <input
+                className="grow"
+                value={newText}
+                maxLength={60}
+                placeholder={t.customPlaceholder}
+                onChange={(e) => setNewText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCustom()}
+              />
+              <button className="primary" disabled={!newText.trim()} onClick={addCustom}>
+                {t.add}
+              </button>
+            </div>
           </Group>
 
           <Group title={t.system}>
             <Row label={t.autostart}>
-              <Switch checked={auto} label={t.autostart} onChange={(v) => (v ? enable() : disable()).then(() => setAuto(v))} />
+              <Switch checked={auto} label={t.autostart} onChange={setAuto} />
             </Row>
           </Group>
         </div>
 
         <div className="col">
           <Group title={t.hours}>
-            <Row label={t.work}>
+            <Row label={t.work} stack>
               <TimeRange start={s.workHours.start} end={s.workHours.end} onChange={(start, end) => update({ ...s, workHours: { ...s.workHours, start, end } })} />
             </Row>
             <div className="row">
@@ -147,7 +198,7 @@ export function SettingsApp() {
                 ))}
               </div>
             </div>
-            <Row label={t.lunch}>
+            <Row label={t.lunch} stack>
               <TimeRange start={s.lunch.start} end={s.lunch.end} onChange={(start, end) => update({ ...s, lunch: { start, end } })} />
             </Row>
           </Group>
@@ -184,6 +235,15 @@ export function SettingsApp() {
           </Group>
         </div>
       </div>
+
+      <footer>
+        <button className="secondary" onClick={() => getCurrentWindow().close()}>
+          {t.cancel}
+        </button>
+        <button className="primary" disabled={!dirty} onClick={save}>
+          {t.save}
+        </button>
+      </footer>
     </main>
   );
 }

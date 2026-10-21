@@ -27,6 +27,7 @@ export const settingsText = {
   title: "설정",
   reminders: "알려줄 것들",
   every: "분마다",
+  customPlaceholder: "알려줄 말 (예: 약 먹기)",
   hours: "알림 시간",
   work: "일하는 시간",
   lunch: "점심시간",
@@ -40,7 +41,8 @@ export const settingsText = {
   badUrl: "주소가 올바르지 않아요. https://로 시작하는지 확인해 주세요",
   system: "기본 설정",
   autostart: "컴퓨터를 켜면 같이 시작해요",
-  autoSave: "바꾸면 바로 저장돼요",
+  save: "저장",
+  cancel: "취소",
 };
 
 export const clickQuips = [
