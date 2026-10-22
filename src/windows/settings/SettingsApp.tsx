@@ -297,7 +297,10 @@ export function SettingsApp() {
   return (
     <main className="settings">
       <aside className="side">
-        <h1>{t.title}</h1>
+        <h1>
+          {t.title}
+          {import.meta.env.DEV && <span className="dev-chip">DEV</span>}
+        </h1>
         <nav className="tabs" role="tablist" aria-orientation="vertical">
           {visibleTabs.map((x) => (
             <button key={x.id} role="tab" aria-selected={tab === x.id} className="tab" onClick={() => setTab(x.id)}>

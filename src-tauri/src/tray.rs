@@ -12,7 +12,7 @@ pub fn open_settings(app: &tauri::AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         let _ = WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings.html".into()))
-            .title("다리꼬지마 설정")
+            .title(if cfg!(debug_assertions) { "다리꼬지마 설정 (DEV)" } else { "다리꼬지마 설정" })
             // measured: the tallest tabs are pet with its square cards (~514) and calendar with two calendars (508)
             .inner_size(960.0, 520.0)
             .build();
@@ -36,7 +36,8 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
 
     TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
-        .tooltip("다리꼬지마")
+        // a dev run (debug build) says so, to tell it apart from the installed app
+        .tooltip(if cfg!(debug_assertions) { "다리꼬지마 (DEV)" } else { "다리꼬지마" })
         .menu(&menu)
         .on_menu_event(move |app, event| match event.id().as_ref() {
             "toggle" => {

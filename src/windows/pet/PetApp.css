@@ -35,6 +35,22 @@ body,
 
 .pet-label .lv { color: var(--accent); }
 
+/* dev runs only: a red tag over the head */
+.dev-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e5484d;
+  color: #fff;
+  font: 800 10px/14px var(--font);
+  letter-spacing: 0.06em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 @keyframes tag-pop {
   0% { transform: scale(0.8); opacity: 0; }
   60% { transform: scale(1.1); opacity: 1; }

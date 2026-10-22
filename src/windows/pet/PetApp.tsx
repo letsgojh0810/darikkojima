@@ -621,7 +621,7 @@ export function PetApp() {
       {/* zoom (unlike transform) changes layout size, so the click-through hit rect follows it */}
       <div
         ref={petRef}
-        style={{ zoom: petScale }}
+        style={{ zoom: petScale, position: "relative" }}
         onMouseEnter={() => {
           setHover(true);
           setActivity((n) => n + 1);
@@ -650,6 +650,8 @@ export function PetApp() {
           openMenu();
         }}
       >
+        {/* a dev run (`npm run app`) wears a tag so it is never mistaken for the installed app */}
+        {import.meta.env.DEV && <div className="dev-badge">DEV</div>}
         <Anim key={clickCount} state={state} muted={quiet} outfit={wearable(petProfiles[petId]?.outfit, level, progress?.titles ?? [])} color={petProfiles[petId]?.color} />
       </div>
       {/* keyed by level so the tag pops once when the level goes up */}
