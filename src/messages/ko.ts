@@ -603,6 +603,11 @@ export const settingsText = {
   resetTitle: "정말 처음부터 다시 시작할까요?",
   resetWarn: "레벨, 친밀도, 숨은 옷, 그동안의 기록이 모두 사라지고 되돌릴 수 없어요. 펫과 이름, 다른 설정은 그대로예요.",
   resetKeep: "그만두기",
+  resetAllLabel: "처음 상태로 되돌리기",
+  resetAllOpen: "모두 초기화",
+  resetAllTitle: "정말 모두 초기화할까요?",
+  resetAllWarn: "모든 설정, 펫 이름·옷·색깔, 캘린더, 레벨과 기록이 처음 상태로 돌아가고 되돌릴 수 없어요. 컴퓨터를 켤 때 같이 시작하는 설정만 그대로예요.",
+  resetAllConfirm: "모두 초기화할게요",
   resetConfirm: "초기화할게요",
   tabTalk: "말 걸기",
   talkTitle: "펫이 먼저 말을 걸어요",
@@ -611,6 +616,7 @@ export const settingsText = {
     lunch: "점심시간 30분 전에 메뉴 추천",
     countdown: "퇴근 3시간, 1시간 전에 알림",
     goodbye: "퇴근 5분 전에 인사",
+    chatter: "가끔 심심하다고 말 걸기",
   },
   lunchMenus: "점심 메뉴",
   menuPlaceholder: "메뉴 추가 (예: 칼국수)",
@@ -686,6 +692,29 @@ export const settingsText = {
 /* ───────── 클릭 한마디 ───────── */
 
 /** Click one-liners every pet can say; nothing here may mention what species the pet is. */
+/** Said on its own now and then during work hours; the `woke` ones when the pet was asleep and wakes up for it. */
+export const chatterLines = {
+  awake: [
+    "심심하네요… 바쁘신가요?",
+    "저 여기 있어요~ 잊으신 거 아니죠?",
+    "오늘 일 많아요? 저는 한가해요",
+    "잠깐 저 좀 봐 주세요",
+    "다들 바쁘네요. 저만 한가해요",
+    "뭐 하고 계세요?",
+    "조용하니까 괜히 말 걸고 싶어요",
+    "혼자 놀기 지루해요",
+    "저랑 잠깐 수다 떨래요?",
+    "똑똑, 잘 지내고 있어요?",
+  ],
+  woke: [
+    "하암… 깜빡 졸았어요. 심심하네요",
+    "음냐… 아직 일하는 중이세요?",
+    "꾸벅… 앗, 안 잤어요! 심심했을 뿐이에요",
+    "하암~ 너무 조용해서 잠들 뻔했어요",
+    "자다 깼어요. 바쁘신가요?",
+  ],
+};
+
 const commonQuips = [
   "부르셨어요?",
   "물은 마셨어요?",
@@ -918,6 +947,8 @@ export const sharedLines = () => [
   ...Object.values(reminderMessages).flat(),
   ...calendarLines,
   ...levelUpLines,
+  ...chatterLines.awake,
+  ...chatterLines.woke,
   ...Object.values(toneGreetings).flat(),
   ...Object.values(toneQuips).flat(),
   ...Object.values(reminderToneLines).flatMap((t) => Object.values(t).flat()),
@@ -1024,6 +1055,8 @@ export const devText = {
   countdown1h: "퇴근 1시간 전",
   goodbye: "퇴근 5분 전",
   goodbyeFriday: "퇴근 5분 전 (금요일)",
+  chatter: "심심해요",
+  chatterWoke: "심심해요 (자다 깸)",
   alerts: "알림",
   calendar: "일정 알림 (10분 전)",
   pile: "알림 4개 한꺼번에 (3줄까지만)",

@@ -27,8 +27,13 @@ export const RobotAnim: PetAnimation = ({ state, muted, outfit, color }) => {
       <rect className="arm" x="28" y="68" width="10" height="17" rx="5" {...dark} />
       <rect className="arm b" x="82" y="68" width="10" height="17" rx="5" {...dark} />
       <rect x="36" y="62" width="48" height="27" rx="12" fill={BODY} {...line} />
-      <circle cx="60" cy="75" r="4.5" fill={LIGHT} />
-      <circle cx="58.6" cy="73.6" r="1.4" fill="#fff" opacity="0.8" />
+      {/* the chest light would show through anything worn at the neck, so it hides under it */}
+      {!outfit?.neck && (
+        <>
+          <circle cx="60" cy="75" r="4.5" fill={LIGHT} />
+          <circle cx="58.6" cy="73.6" r="1.4" fill="#fff" opacity="0.8" />
+        </>
+      )}
       <g transform={`translate(0 ${headDy(state)})`}>
         <path d="M60 21 V11" stroke={DARK} strokeWidth="3" strokeLinecap="round" />
         <circle cx="60" cy="9" r="4" fill={LIGHT} stroke={outline(LIGHT)} strokeWidth={LINE_W} />

@@ -135,58 +135,58 @@ const HEAD: Record<string, ReactNode> = {
   ),
 };
 
-/** neck pieces, (0, 0) where the head meets the body */
+/** neck pieces, (0, 0) at the bottom of the chin; they hang from there, so nothing crosses the outlined chin */
 const NECK: Record<string, ReactNode> = {
   tie: (
     <>
-      <path d="M-4 -2 h8 l-2 5 h-4 Z" fill="#F04452" />
-      <path d="M-2 3 h4 l3 12 l-5 4 l-5 -4 Z" fill="#F04452" />
+      <path d="M-4 -1 h8 l-2 5 h-4 Z" fill="#F04452" />
+      <path d="M-2 4 h4 l3 12 l-5 4 l-5 -4 Z" fill="#F04452" />
     </>
   ),
   bandana: (
     <>
-      <path d="M-17 -3 L17 -3 L0 13 Z" fill="#FF9F1C" />
-      <circle cx="-6" cy="1" r="1.3" fill="#fff" />
-      <circle cx="5" cy="1" r="1.3" fill="#fff" />
-      <circle cy="6" r="1.3" fill="#fff" />
+      <path d="M-17 -1 L17 -1 L0 15 Z" fill="#FF9F1C" />
+      <circle cx="-6" cy="3" r="1.3" fill="#fff" />
+      <circle cx="5" cy="3" r="1.3" fill="#fff" />
+      <circle cy="8" r="1.3" fill="#fff" />
     </>
   ),
   scarf: (
     <>
-      <rect x="-22" y="-4" width="44" height="9" rx="4.5" fill="#F04452" />
-      <rect x="9" y="2" width="8" height="14" rx="3" fill="#D93645" />
+      <rect x="-22" y="-3" width="44" height="9" rx="4.5" fill="#F04452" />
+      <rect x="9" y="3" width="8" height="14" rx="3" fill="#D93645" />
     </>
   ),
   bow: (
     <>
-      <path d="M0 0 L-11 -7 L-11 7 Z M0 0 L11 -7 L11 7 Z" fill="#FF8FA0" stroke="#FF8FA0" strokeWidth="2" strokeLinejoin="round" />
-      <circle r="3.5" fill="#FF6F86" />
+      <path d="M0 3 L-11 -4 L-11 10 Z M0 3 L11 -4 L11 10 Z" fill="#FF8FA0" stroke="#FF8FA0" strokeWidth="2" strokeLinejoin="round" />
+      <circle cy="3" r="3.5" fill="#FF6F86" />
     </>
   ),
   medal: (
     <>
-      <path d="M-7 -3 L0 9 L7 -3" fill="none" stroke="#3182F6" strokeWidth="3" />
-      <circle cy="12" r="5.5" fill={GOLD} stroke={GOLD_EDGE} strokeWidth="1.2" />
+      <path d="M-7 0 L0 10 L7 0" fill="none" stroke="#3182F6" strokeWidth="3" />
+      <circle cy="13" r="5.5" fill={GOLD} stroke={GOLD_EDGE} strokeWidth="1.2" />
     </>
   ),
   lei: (
     <>
       {along(7, (i) => (
-        <circle key={i} cx={-18 + i * 6} cy={(-18 + i * 6) ** 2 / -40 + 6} r="3.4" fill={["#FF8FA0", GOLD, "#FFB58F"][i % 3]} />
+        <circle key={i} cx={-18 + i * 6} cy={(-18 + i * 6) ** 2 / -40 + 9} r="3.4" fill={["#FF8FA0", GOLD, "#FFB58F"][i % 3]} />
       ))}
     </>
   ),
   locket: (
     <>
-      <path d="M-14 -3 Q0 10 14 -3" fill="none" stroke="#B0B8C1" strokeWidth="1.2" />
-      <path d="M0 13 C-6 8 -5 4 -2.5 4 C-1 4 0 5.5 0 5.5 C0 5.5 1 4 2.5 4 C5 4 6 8 0 13 Z" fill="#F04452" />
+      <path d="M-14 0 Q0 12 14 0" fill="none" stroke="#8B95A1" strokeWidth="1.3" />
+      <path d="M0 15 C-6 10 -5 6 -2.5 6 C-1 6 0 7.5 0 7.5 C0 7.5 1 6 2.5 6 C5 6 6 10 0 15 Z" fill="#F04452" />
     </>
   ),
   badge: (
     <>
-      <path d="M-12 -3 L-3 10 M12 -3 L3 10" stroke="#3182F6" strokeWidth="2" />
-      <rect x="-6" y="9" width="12" height="15" rx="2" fill="#fff" stroke="#B0B8C1" />
-      <rect x="-3" y="12" width="6" height="5" rx="1" fill="#B0B8C1" />
+      <path d="M-12 0 L-3 11 M12 0 L3 11" stroke="#3182F6" strokeWidth="2" />
+      <rect x="-6" y="10" width="12" height="15" rx="2" fill="#fff" stroke="#B0B8C1" />
+      <rect x="-3" y="13" width="6" height="5" rx="1" fill="#B0B8C1" />
     </>
   ),
 };

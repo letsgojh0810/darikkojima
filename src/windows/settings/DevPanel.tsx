@@ -62,6 +62,8 @@ export function DevPanel({ s }: { s: Settings }) {
             <button className="secondary" onClick={() => sendDebug({ type: "moment", id: "countdown1h" })}>{d.countdown1h}</button>
             <button className="secondary" onClick={() => sendDebug({ type: "moment", id: "goodbye" })}>{d.goodbye}</button>
             <button className="secondary" onClick={() => sendDebug({ type: "moment", id: "goodbye", friday: true })}>{d.goodbyeFriday}</button>
+            <button className="secondary" onClick={() => sendDebug({ type: "chatter", woke: false })}>{d.chatter}</button>
+            <button className="secondary" onClick={() => sendDebug({ type: "chatter", woke: true })}>{d.chatterWoke}</button>
           </Buttons>
 
           <Buttons title={d.alerts}>

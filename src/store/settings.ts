@@ -14,6 +14,8 @@ export interface Moments {
   countdown: boolean;
   /** 5 minutes before the end of work */
   goodbye: boolean;
+  /** now and then during work hours: "심심하네요, 바쁘신가요?" */
+  chatter: boolean;
 }
 
 /** A user-defined reminder: `text` is both its name in settings and what the pet says. */
@@ -81,7 +83,7 @@ export const defaultSettings: Settings = {
     stretch: { enabled: true, intervalMin: 90 },
   },
   custom: [],
-  moments: { greeting: true, lunch: true, countdown: true, goodbye: true },
+  moments: { greeting: true, lunch: true, countdown: true, goodbye: true, chatter: true },
   lunchMenus: defaultLunchMenus,
   workHours: { start: "09:00", end: "18:00", days: [1, 2, 3, 4, 5] },
   lunch: { start: "12:00", end: "13:00" },

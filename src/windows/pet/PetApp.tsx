@@ -7,6 +7,7 @@ import { applyAppearance } from "../../theme";
 import { createMoments, leaveStatus } from "../../greetings/moments";
 import {
   calendarMessage,
+  chatterLines,
   greetingMessage,
   itemGotMessage,
   itemNames,
@@ -43,6 +44,9 @@ import "../../tokens.css";
 import "./PetApp.css";
 
 const GREET_GAP = 30 * 60_000; // restarting the app over and over does not greet over and over
+/** minutes between two "심심하네요" */
+const CHATTER_MIN = 35;
+const CHATTER_MAX = 80;
 const greetedRecently = () => Date.now() - Number(localStorage.getItem("lastGreetAt") ?? 0) < GREET_GAP;
 
 export function PetApp() {
@@ -57,6 +61,29 @@ export function PetApp() {
   const [activity, setActivity] = useState(0);
   // only reminders put the pet in its nagging mood; greetings and the lunch bubble keep it friendly
   const awake = usePetState(notices.some((n) => n.kind === "reminder"), activity);
+  // read by the chatter timer, which outlives renders
+  const sleepingRef = useRef(false);
+  sleepingRef.current = awake === "sleep";
+  const busyRef = useRef(false);
+  busyRef.current = notices.length > 0 || !!lunch;
+
+  // now and then the pet says it is bored; one that fell asleep wakes up for it. Held back like a reminder:
+  // quiet mode, fullscreen, outside work hours, lunch and meetings.
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const next = () => {
+      t = setTimeout(tick, (CHATTER_MIN + Math.random() * (CHATTER_MAX - CHATTER_MIN)) * 60_000);
+    };
+    const tick = async () => {
+      next();
+      if (!settingsRef.current?.moments.chatter || busyRef.current || !(await scheduler.current?.canNotify("reminder"))) return;
+      const woke = sleepingRef.current;
+      setActivity((n) => n + 1); // wakes it
+      say(oneOf(woke ? chatterLines.woke : chatterLines.awake), 8000);
+    };
+    next();
+    return () => clearTimeout(t);
+  }, []);
 
   // "조용히 하기" has no end time, so it is remembered across restarts and the pet wears an X of tape over its mouth the whole time
   const [quiet, setQuietState] = useState(() => localStorage.getItem("quiet") === "1");
@@ -206,6 +233,16 @@ export function PetApp() {
       setProgress(p);
       saveProgress(p);
     });
+    // "모두 초기화": on top of the above, forget quiet mode and the small things remembered in localStorage
+    const unlistenFactory = listen("factory-reset", () => {
+      localStorage.clear();
+      quietRef.current = false;
+      setQuietState(false);
+      scheduler.current?.setQuiet(false);
+      emit("quiet-state", false);
+      setNotices([]);
+      setLunch(null);
+    });
     const unlistenSettings = listen("settings-changed", async () => {
       settings = await loadSettings();
       settingsRef.current = settings;
@@ -274,6 +311,10 @@ export function PetApp() {
             case "quip":
               say(oneOf(quipsFor(petIdRef.current, levelRef.current, progressRef.current?.totals)));
               break;
+            case "chatter":
+              setActivity((n) => n + 1);
+              say(oneOf(c.woke ? chatterLines.woke : chatterLines.awake), 8000);
+              break;
             case "unlockAll": {
               const p = progressRef.current;
               if (!p) break;
@@ -305,6 +346,7 @@ export function PetApp() {
       unlistenPreview.then((f) => f());
       unlistenQuiet.then((f) => f());
       unlistenReset.then((f) => f());
+      unlistenFactory.then((f) => f());
       unlistenSettings.then((f) => f());
     };
   }, []);
@@ -484,10 +526,11 @@ export function PetApp() {
     say(oneOf(petQuips.skipped));
   };
 
-  const say = (text: string) => {
+  /** `ms`: how long it stays; longer when the pet speaks first and the user may not be looking */
+  const say = (text: string, ms = 2500) => {
     clearTimeout(quipTimer.current);
     setQuip(text);
-    quipTimer.current = setTimeout(() => setQuip(undefined), 2500);
+    quipTimer.current = setTimeout(() => setQuip(undefined), ms);
   };
 
   // a press that never moved is a click; moving past 4px turns it into a window drag

@@ -65,7 +65,8 @@ type Pt = { x: number; y: number };
 
 /**
  * Where clothes go on each pet, in that pet's SVG coordinates: the top of the head, the two eyes, the two sides of the
- * head where earphones sit, the neck; `size` scales the pieces to the head.
+ * head where earphones sit, the neck (the bottom of the chin: neck pieces start there and hang down); `size` scales the
+ * pieces to the head.
  */
 export interface Anchors {
   top: Pt;
@@ -76,8 +77,8 @@ export interface Anchors {
 }
 
 export const ANCHORS: Record<string, Anchors> = {
-  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], neck: { x: 60, y: 64 }, size: 1 },
-  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], neck: { x: 60, y: 64 }, size: 1 },
-  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], neck: { x: 60, y: 66 }, size: 0.95 },
-  robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], neck: { x: 60, y: 63 }, size: 1.12 },
+  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], neck: { x: 60, y: 66 }, size: 1 },
+  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], neck: { x: 60, y: 66 }, size: 1 },
+  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], neck: { x: 60, y: 68 }, size: 0.95 },
+  robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], neck: { x: 60, y: 65 }, size: 1.12 },
 };

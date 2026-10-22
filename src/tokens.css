@@ -23,8 +23,6 @@
   --hover: rgba(60, 30, 10, 0.05);
   --press: rgba(60, 30, 10, 0.08);
   --shadow: 0 4px 16px rgba(40, 20, 5, 0.1);
-  --toast-bg: #3a332e;
-  --toast-text: #fff;
 
   --font: "Pretendard", -apple-system, "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
   --r-xs: 6px;
@@ -57,8 +55,6 @@
     --hover: rgba(255, 255, 255, 0.06);
     --press: rgba(255, 255, 255, 0.1);
     --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --toast-bg: #f5f0eb;
-    --toast-text: #2b2622;
   }
 }
 
@@ -78,6 +74,4 @@
   --hover: rgba(255, 255, 255, 0.06);
   --press: rgba(255, 255, 255, 0.1);
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --toast-bg: #f5f0eb;
-  --toast-text: #2b2622;
 }

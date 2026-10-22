@@ -49,7 +49,7 @@
 @keyframes shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
 @keyframes hop {
   0% { transform: translateY(0) scale(1.06); }
-  35% { transform: translateY(-22px) scale(0.96, 1.08); }
+  35% { transform: translateY(-16px) scale(0.96, 1.08); }
   70% { transform: translateY(0) scale(1.1, 0.88); }
   100% { transform: translateY(0) scale(1.06); }
 }

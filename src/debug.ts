@@ -14,6 +14,8 @@ export type DebugCmd =
   | { type: "ttl"; ms: number | null }
   | { type: "state"; state: PetState | null }
   | { type: "quip" }
+  /** the "심심하네요" line now, the waking one when `woke` */
+  | { type: "chatter"; woke: boolean }
   | { type: "exp"; amount: number }
   /** jumps straight to the first point of a level (Lv.1 = 0 points, i.e. a reset) */
   | { type: "level"; level: number }

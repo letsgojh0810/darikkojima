@@ -24,7 +24,7 @@ import { DevPanel } from "./DevPanel";
 import { loadProgress, loadSettings, saveSettings } from "../../store";
 import { isUnlocked, ITEMS, SLOTS, wearable, type Slot } from "../../pet/outfit";
 import { emptyProgress, levelOf, type Progress } from "../../pet/progress";
-import { withProfile, type CustomReminder, type PetPreview, type ReminderId, type Settings } from "../../store/settings";
+import { defaultSettings, withProfile, type CustomReminder, type PetPreview, type ReminderId, type Settings } from "../../store/settings";
 import { petColors, petIds, pets } from "../../pet/anim/pets";
 import { ACCENTS, applyAppearance, type ThemeMode } from "../../theme";
 import "../../tokens.css";
@@ -157,6 +157,7 @@ export function SettingsApp() {
   const lv = levelOf(progress?.exp ?? 0);
   const titles = progress?.titles ?? [];
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmAll, setConfirmAll] = useState(false);
   const [slot, setSlot] = useState<Slot>("head");
   const [hoverPet, setHoverPet] = useState<string | null>(null);
   const barPct = lv.max ? 100 : (lv.into / lv.need) * 100;
@@ -214,6 +215,24 @@ export function SettingsApp() {
       if (notify) emit("settings-changed");
     });
   };
+  /**
+   * 모두 초기화: settings back to the defaults, and the pet window clears what it owns (closeness, position, quiet mode,
+   * the little things remembered in localStorage). Autostart is a Windows setting and stays as it is.
+   */
+  const resetAll = async () => {
+    const fresh = { ...defaultSettings };
+    await saveSettings(fresh);
+    update(fresh);
+    setSaved({ s: fresh });
+    setProgress(emptyProgress(new Date()));
+    setChecks({});
+    setConfirmAll(false);
+    await emit("progress-reset");
+    await emit("factory-reset");
+    await emit("reset-position");
+    await emit("settings-changed");
+  };
+
   // a system setting, applied the moment it is flipped like everything else on the general tab
   const setAutostart = async (on: boolean) => {
     await (on ? enable() : disable());
@@ -325,6 +344,27 @@ export function SettingsApp() {
               <Row label={t.autostart}>
                 <Switch checked={auto} label={t.autostart} onChange={setAutostart} />
               </Row>
+              {/* irreversible, so two steps like the closeness reset: the first press only unfolds the warning */}
+              {!confirmAll ? (
+                <Row label={t.resetAllLabel}>
+                  <button className="remove" onClick={() => setConfirmAll(true)}>
+                    {t.resetAllOpen}
+                  </button>
+                </Row>
+              ) : (
+                <div className="danger-box" role="alertdialog" aria-label={t.resetAllTitle}>
+                  <strong>{t.resetAllTitle}</strong>
+                  <p>{t.resetAllWarn}</p>
+                  <div className="actions">
+                    <button className="secondary" onClick={() => setConfirmAll(false)}>
+                      {t.resetKeep}
+                    </button>
+                    <button className="danger-btn" onClick={resetAll}>
+                      {t.resetAllConfirm}
+                    </button>
+                  </div>
+                </div>
+              )}
             </Group>
           </div>
 
