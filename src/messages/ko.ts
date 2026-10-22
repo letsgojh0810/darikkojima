@@ -1,17 +1,69 @@
 import type { ReminderId } from "../store/settings";
 
-export const reminderMessages: Record<ReminderId, string[]> = {
-  legs: ["다리 또 꼬셨죠?", "다리 풀어요, 척추가 울고 있어요", "꼰 다리, 지금 바로 내려놓아요!"],
-  posture: ["허리 펴세요, 거북목 되기 싫으면", "어깨 좀 펴볼까요?", "화면에 코 박고 있진 않나요?"],
-  water: ["물 한 잔 하고 오세요", "물 마실 타임이에요", "커피 말고 물이요, 물!"],
-  stretch: ["일어나서 기지개 한번 켜요", "목이랑 어깨 돌려볼까요?", "잠깐 스트레칭하고 올까요?"],
-};
-
 const MAX_TITLE = 20;
+const shorten = (title: string) => (title.length > MAX_TITLE ? `${title.slice(0, MAX_TITLE)}…` : title);
+const pick = <T>(xs: readonly T[], rand: () => number) => xs[Math.floor(rand() * xs.length)];
+const clock = (d: Date) => (d.getMinutes() ? `${d.getHours()}시 ${d.getMinutes()}분` : `${d.getHours()}시`);
 
-export const calendarMessage = (title: string, min: number) => {
-  const short = title.length > MAX_TITLE ? `${title.slice(0, MAX_TITLE)}…` : title;
-  return `'${short}' 일정이 ${min}분 뒤에 있어요`;
+/* ───────── 리마인더 ───────── */
+
+export const reminderMessages: Record<ReminderId, string[]> = {
+  legs: [
+    "다리 또 꼬셨죠?",
+    "다리 풀어요, 척추가 울고 있어요",
+    "꼰 다리, 지금 바로 내려놓아요!",
+    "두 발을 바닥에 딱 붙여 봐요",
+    "다리 꼬면 골반이 삐뚤어져요. 풀어요",
+    "지금 다리 어떻게 하고 있어요? 확인해 봐요",
+    "한쪽 다리가 위에 올라가 있진 않나요?",
+    "의자에 깊숙이, 발은 바닥에 두어요",
+    "꼰 다리는 오래 못 간대요. 풀어요",
+    "다리 꼬는 습관, 오늘만 참아 봐요",
+    "혈액순환이 부탁했어요. 다리 풀어 주세요",
+    "발바닥이 바닥을 그리워해요",
+  ],
+  posture: [
+    "허리 펴세요, 거북목 되기 싫으면",
+    "어깨 좀 펴볼까요?",
+    "화면에 코 박고 있진 않나요?",
+    "등을 의자에 붙여 봐요",
+    "턱을 살짝 당겨 봐요",
+    "모니터와 눈높이를 맞춰요",
+    "어깨가 귀에 붙어 있진 않나요?",
+    "허리에 힘 빼고, 가슴은 활짝 펴요",
+    "지금 자세, 10점 만점에 몇 점이에요?",
+    "구부정한 건 허리가 제일 먼저 알아요",
+    "앉은 자세 점검 시간이에요",
+    "화면이 당신을 끌어당기고 있어요. 버텨요",
+  ],
+  water: [
+    "물 한 잔 하고 오세요",
+    "물 마실 타임이에요",
+    "커피 말고 물이요, 물!",
+    "입술이 마르지 않았나요? 물 한 잔 해요",
+    "오늘 물 몇 잔 마셨어요?",
+    "수분 충전 시간이에요",
+    "컵이 비었다면 지금이 채울 때예요",
+    "물 뜨러 가는 길에 기지개도 켜요",
+    "몸의 절반은 물이에요. 채워 줘요",
+    "목마르다고 느끼면 이미 늦었대요. 한 잔 해요",
+    "자리에서 일어나 물 뜨러 가요",
+    "물 한 잔이 집중력을 살려 줘요",
+  ],
+  stretch: [
+    "일어나서 기지개 한번 켜요",
+    "목이랑 어깨 돌려볼까요?",
+    "잠깐 스트레칭하고 올까요?",
+    "손목을 천천히 돌려 봐요",
+    "팔을 위로 쭉 뻗어 봐요",
+    "자리에서 일어나 한 바퀴 걸어요",
+    "목을 좌우로 천천히 기울여 봐요",
+    "어깨를 뒤로 크게 세 번 돌려요",
+    "허리를 좌우로 살짝 비틀어 봐요",
+    "눈도 쉬어요. 먼 곳을 20초만 봐요",
+    "발목도 돌려 봐요",
+    "굳은 몸이 부르고 있어요. 한 번만 풀어요",
+  ],
 };
 
 export const reminderLabels: Record<ReminderId, string> = {
@@ -21,12 +73,418 @@ export const reminderLabels: Record<ReminderId, string> = {
   stretch: "스트레칭",
 };
 
+/* ───────── 일정 알림 ───────── */
+
+const calendarLines = [
+  "'{t}' 일정이 {m}분 뒤에 있어요",
+  "{m}분 뒤 '{t}' 일정이에요. 슬슬 준비해요",
+  "곧 '{t}' 일정이에요. {m}분 남았어요",
+  "'{t}' 일정까지 {m}분이에요. 물 한 잔 챙겨요",
+  "'{t}' 일정 {m}분 전이에요. 자료는 준비됐나요?",
+  "{m}분 뒤 '{t}' 일정이 시작돼요. 노트북 챙겨요",
+  "'{t}' 일정이 {m}분 앞이에요. 하던 일은 저장해요",
+  "곧 '{t}' 일정이에요. 마음의 준비는 됐나요?",
+  "'{t}' 일정까지 {m}분! 지각하지 않게 슬슬 움직여요",
+  "{m}분 뒤에 '{t}' 일정이 있어요. 지금 일은 잠깐 멈춰도 돼요",
+];
+
+export const calendarMessage = (title: string, min: number, rand: () => number = Math.random) =>
+  pick(calendarLines, rand).replace("{t}", shorten(title)).replace("{m}", String(min));
+
+/* ───────── 켰을 때 인사 ───────── */
+
+const greetings = {
+  morning: [
+    "좋은 아침이에요",
+    "오늘도 같이 힘내요",
+    "커피부터 한 잔 하고 시작해요",
+    "출근하느라 고생했어요",
+    "아침엔 시동이 천천히 걸려도 괜찮아요",
+    "오늘의 첫 번째 할 일: 물 한 잔",
+    "메일함은 잠깐 모르는 척해도 돼요",
+    "오늘 하루도 무사히 가 봐요",
+  ],
+  noon: [
+    "점심시간이 가까워요",
+    "슬슬 배고플 시간이네요",
+    "오전 일은 거의 다 끝났죠?",
+    "메뉴는 정하셨어요? 안 정했으면 제가 도울게요",
+    "점심 전에 일 하나만 더 끝내 볼까요?",
+    "배에서 신호가 오기 시작했어요",
+    "오전 수고했어요, 곧 밥이에요",
+  ],
+  afternoon: [
+    "오후도 같이 버텨요",
+    "졸리면 스트레칭 한번 해요",
+    "점심 먹고 나면 졸린 게 정상이에요",
+    "오후 3시는 원래 당이 떨어지는 시간이에요",
+    "커피 한 잔 더 해도 괜찮아요",
+    "퇴근이 조금씩 가까워지고 있어요",
+    "지금 하는 일, 내일 해도 되는 거면 내일 해요",
+    "오후 일은 천천히, 하지만 꾸준히요",
+  ],
+  evening: [
+    "아직 일하고 있어요? 고생이 많아요",
+    "퇴근했으면 이제 쉬어요",
+    "저녁은 챙겨 드셨어요?",
+    "야근이라면 간식이라도 챙겨요",
+    "오늘 하루도 정말 수고했어요",
+    "이제 일은 내려놓고 숨 좀 쉬어요",
+    "퇴근 후엔 회사 생각은 잠시 꺼 둬요",
+    "늦게까지 고생이에요, 무리하지 마요",
+  ],
+  night: [
+    "이 시간엔 쉬는 게 좋아요",
+    "아직 안 주무셨어요?",
+    "내일의 나를 위해 오늘은 그만 자요",
+    "밤에는 화면 밝기를 낮춰 봐요",
+    "늦게까지 일하는 건 멋있지 않아요, 자요",
+    "눈이 피곤하겠어요, 잠깐 감아 봐요",
+    "오늘 일은 내일의 내가 할 거예요",
+    "이 시간에 만나다니, 깜짝이야",
+  ],
+  monday: [
+    "월요일이네요, 천천히 시동 걸어요",
+    "월요일은 원래 그래요. 같이 가요",
+    "월요일에 출근한 것만으로 대단해요",
+    "이번 주도 시작이네요. 일단 커피부터요",
+    "월요병엔 느린 시작이 약이에요",
+    "월요일 아침엔 큰 목표 말고 작은 목표 하나만요",
+    "한 주의 첫날, 부담은 반만 가져가요",
+    "금요일까지 4일 남았어요. 위로가 안 되죠?",
+  ],
+  friday: [
+    "금요일이에요, 조금만 더 힘내요",
+    "내일이면 주말이에요, 오늘만 버텨요",
+    "금요일 출근, 마음은 벌써 반쯤 퇴근했죠?",
+    "오늘은 새 일 벌리지 않기로 해요",
+    "주말이 코앞이에요. 조금만 더요",
+    "금요일엔 일이 잘 안 되는 게 정상이에요",
+    "이번 주도 정말 고생 많았어요",
+    "금요일 오후엔 마음이 먼저 퇴근해요",
+  ],
+  weekend: [
+    "주말에도 만나서 반가워요",
+    "쉬는 날인데 열었네요",
+    "주말에 일하는 거면 평일에 꼭 쉬어요",
+    "오늘은 아무것도 안 해도 괜찮은 날이에요",
+    "주말인데 컴퓨터 앞이라니, 제가 말릴게요",
+    "쉬는 날엔 쉬는 게 일이에요",
+    "주말엔 알림도 쉬어요. 인사만 드릴게요",
+    "휴일 출근이면 제가 더 응원할게요",
+  ],
+};
+
+/** Said when the app starts. Names the first event still to come today, if the calendar knows one. */
+export function greetingMessage(now: Date, firstEvent?: { title: string; start: Date }, rand: () => number = Math.random) {
+  const h = now.getHours();
+  const day = now.getDay();
+  const pool =
+    h >= 22 || h < 5
+      ? greetings.night
+      : day === 0 || day === 6
+        ? greetings.weekend
+        : day === 1 && h < 14
+          ? greetings.monday
+          : day === 5 && h < 18
+            ? greetings.friday
+            : h < 11
+              ? greetings.morning
+              : h < 14
+                ? greetings.noon
+                : h < 18
+                  ? greetings.afternoon
+                  : greetings.evening;
+  const hello = pick(pool, rand);
+  if (!firstEvent) return hello;
+  const stop = /[.!?…]$/.test(hello) ? " " : ". ";
+  return `${hello}${stop}오늘 첫 일정은 ${clock(firstEvent.start)} '${shorten(firstEvent.title)}'예요`;
+}
+
+/* ───────── 퇴근 ───────── */
+
+const momentLines = {
+  countdown3h: [
+    "퇴근까지 3시간 남았어요",
+    "퇴근까지 3시간! 커피 한 잔 어때요?",
+    "퇴근까지 3시간, 슬슬 정리할 것 정해요",
+    "3시간 뒤면 퇴근이에요. 급한 것부터 끝내요",
+    "퇴근까지 3시간이에요. 길어 보여도 금방이에요",
+    "남은 시간 3시간, 오늘 안에 끝낼 것만 골라 봐요",
+    "퇴근 3시간 전! 오후 일은 천천히 가요",
+    "3시간만 버티면 자유예요",
+    "퇴근까지 3시간. 간식 타임이 필요하지 않나요?",
+    "퇴근 3시간 전이에요. 물 한 잔 마시고 가요",
+    "퇴근이 3시간 앞이에요. 마음은 이미 반쯤 가 있죠?",
+    "퇴근까지 3시간. 메일 정리부터 해 볼까요?",
+    "3시간 뒤 퇴근이에요. 오늘의 목표를 하나만 남겨요",
+    "퇴근 3시간 전, 슬슬 마무리 모드 준비해요",
+    "3시간이면 꽤 많은 걸 끝낼 수 있어요",
+  ],
+  countdown1h: [
+    "퇴근까지 1시간이에요. 마무리 모드로 가요",
+    "이제 1시간만 버티면 돼요",
+    "퇴근까지 1시간! 새 일은 내일로 미뤄요",
+    "퇴근 1시간 전이에요. 오늘 안에 끝낼 것만 챙겨요",
+    "1시간 남았어요. 슬슬 정리 시작해요",
+    "퇴근까지 1시간, 마지막 스퍼트예요",
+    "1시간 뒤면 퇴근이에요. 급한 건 지금 처리해요",
+    "퇴근 1시간 전! 커피 마지막 잔 어때요?",
+    "퇴근까지 1시간. 새 회의는 정중히 거절해요",
+    "이제 1시간이에요. 오늘 한 일을 정리해 봐요",
+    "퇴근 1시간 전이에요. 내일 할 일 목록을 적어 둬요",
+    "1시간만 더! 거의 다 왔어요",
+    "퇴근까지 1시간, 마음은 이미 문 앞이죠?",
+    "퇴근 1시간 전이에요. 무리하지 말고 마무리해요",
+    "남은 시간 1시간. 오늘도 꽤 잘했어요",
+  ],
+  goodbye: [
+    "5분 뒤면 퇴근이에요. 오늘도 수고했어요",
+    "퇴근 5분 전! 노트북 덮을 준비해요",
+    "퇴근 5분 전이에요. 새 일은 시작하지 말아요",
+    "곧 퇴근이에요. 오늘 한 일을 한 번 훑어봐요",
+    "5분만 더 버티면 자유예요",
+    "퇴근 5분 전, 마음은 이미 현관이죠?",
+    "책상 정리하고 퇴근해요",
+    "오늘도 무사히 끝났네요. 수고했어요",
+    "퇴근 5분 전! 내일의 나에게 메모만 남겨요",
+    "이제 곧 퇴근이에요. 오늘의 나를 칭찬해 줘요",
+    "5분 뒤 퇴근이에요. 메일은 내일 열어도 돼요",
+    "퇴근 5분 전! 슬슬 가방 챙겨요",
+    "곧 퇴근이에요. 오늘 정말 고생했어요",
+    "5분 뒤면 오늘의 일은 끝이에요",
+    "퇴근 5분 전이에요. 마지막 저장은 하셨죠?",
+    "시계 보세요. 퇴근이 코앞이에요",
+    "5분 남았어요. 이제 마무리해도 돼요",
+    "퇴근 직전엔 새 메일을 열지 않는 게 예의예요",
+    "퇴근 5분 전! 오늘 저녁엔 뭐 드실래요?",
+    "거의 다 왔어요. 퇴근까지 5분이에요",
+    "오늘도 해냈어요. 5분 뒤에 퇴근이에요",
+    "퇴근 5분 전, 컴퓨터 끄기 전에 물 한 잔 해요",
+    "곧 퇴근이에요. 오늘 하루도 잘 버텼어요",
+    "퇴근 5분 전! 노트북 덮고 숨 한번 크게 쉬어요",
+    "5분 뒤 퇴근이에요. 오늘은 일찍 쉬어요",
+  ],
+  goodbyeFriday: [
+    "5분 뒤면 퇴근, 그리고 주말이에요!",
+    "퇴근 5분 전! 이번 주도 고생했어요",
+    "금요일 퇴근 5분 전이에요. 주말이 기다려요",
+    "곧 퇴근이에요. 이번 주 정말 수고했어요",
+    "5분만 더! 그러면 주말이에요",
+    "퇴근 5분 전, 월요일의 일은 월요일의 내가 할 거예요",
+    "주말 시작까지 5분 남았어요",
+    "이번 주도 버텼어요. 5분 뒤에 자유예요",
+    "금요일 퇴근 5분 전! 노트북 덮고 주말 모드로요",
+    "곧 퇴근이에요. 주말엔 푹 쉬어요",
+    "5분 뒤면 주말이에요. 오늘은 칭찬받을 날이에요",
+    "퇴근 5분 전! 주말 계획은 세워 뒀어요?",
+    "이번 주 마지막 5분이에요. 힘내요",
+    "주말이 코앞이에요. 마지막 저장하고 나가요",
+    "금요일 퇴근 5분 전, 메일함은 월요일에 열어요",
+    "5분 뒤 퇴근, 그리고 이틀의 휴가가 시작돼요",
+    "퇴근 5분 전! 이번 주 고생한 나에게 맛있는 걸 줘요",
+    "곧 주말이에요. 무사히 한 주를 마쳤어요",
+    "금요일 퇴근 5분 전이에요. 일은 월요일로 던져요",
+    "5분 뒤에 주말이에요. 오늘은 마음껏 쉬어요",
+  ],
+};
+
+/** Timed lines that need no buttons: the two countdowns and the goodbye (a different set on Fridays). */
+export function momentMessage(id: "countdown3h" | "countdown1h" | "goodbye", friday: boolean, rand: () => number = Math.random) {
+  return pick(id === "goodbye" && friday ? momentLines.goodbyeFriday : momentLines[id], rand);
+}
+
+/* ───────── 점심 룰렛 ───────── */
+
+const lunchAsk = [
+  "점심 뭐 먹을까요?",
+  "오늘 점심은 뭐로 할까요?",
+  "배고플 시간이에요. 메뉴 골라 드릴까요?",
+  "점심 메뉴 고민되시죠? 제가 정해 드릴게요",
+  "오늘의 가장 큰 결정, 점심 메뉴예요",
+  "메뉴 고르는 시간이 제일 아까워요. 맡겨 주세요",
+  "점심 30분 전이에요. 메뉴는 정하셨어요?",
+  "아직 안 정했으면 룰렛 한번 돌려 볼까요?",
+  "'아무거나'라고 하실 거죠? 제가 정해 줄게요",
+  "점심 고민은 저한테 던지세요",
+  "오늘은 어떤 맛이 당겨요?",
+  "같이 먹을 사람은 정했어요? 메뉴는 제가 정할게요",
+  "슬슬 점심 생각날 때죠?",
+  "밥 먹을 준비 되셨어요?",
+  "점심 룰렛 돌릴 시간이에요",
+  "오전 일 끝내고 맛있는 거 먹어요",
+  "어제와 겹치지 않는 점심을 골라 볼까요?",
+  "뭐 먹을지 고민하다 점심시간 다 가요. 빨리 정해요",
+  "배에서 소리 나기 전에 메뉴부터 정해요",
+  "오늘 점심은 운에 맡겨 볼까요?",
+  "점심 뭐 드시고 싶어요? 모르겠으면 제가 알려 드려요",
+  "결정 장애 해결사 등장! 점심 뭐 먹을래요?",
+  "메뉴 후보가 많죠? 제가 하나로 줄여 드릴게요",
+  "점심시간 전에 미리 정해 두면 마음이 편해요",
+  "점심 투표 대신 룰렛 어때요?",
+  "한 번만 돌려 볼래요?",
+  "밥때가 다가와요. 메뉴 정해 드릴까요?",
+  "오늘은 새로운 메뉴에 도전해 볼까요?",
+  "뭐 먹을지 이제 그만 고민하고 맡겨요",
+  "맛있는 점심은 좋은 오후의 시작이에요",
+  "점심 메뉴 추천 서비스, 지금 영업 중이에요",
+  "룰렛이 배고프대요. 돌려 볼까요?",
+  "오늘도 점심은 중요해요. 메뉴 골라요",
+  "점심 전에 메뉴만 정하면 반은 성공이에요",
+  "고민 5분이면 식사 시간이 줄어요. 룰렛이 대신할게요",
+  "메뉴 정하기 어렵죠? 저도 어려워요. 그래서 룰렛이 있어요",
+  "배고픈 사람 손! 메뉴는 제가 정해 줄게요",
+  "점심 어디로 갈지, 뭘 먹을지 같이 정해요",
+  "오늘 점심은 특별하게 가 볼까요?",
+  "룰렛 대기 중이에요. 언제든 누르세요",
+  "오늘 메뉴를 운명에 맡겨 봐요",
+  "회의 전에 배부터 채워요. 메뉴 정해 드릴까요?",
+  "이 시간에 메뉴를 못 정하면 줄이 길어져요",
+  "점심 줄 서기 전에 메뉴부터 정해요",
+  "오늘은 가볍게? 든든하게? 룰렛이 정해 줄게요",
+  "점심 후보 말고 정답을 알려 드릴게요",
+  "고민은 짧게, 점심은 길게요",
+  "메뉴 고민 끝내 드릴게요",
+  "시계 보세요, 점심이 다가와요. 메뉴 정해요",
+  "점심 메뉴 뽑기, 한 번 하고 가요",
+  "오늘 점심은 뭐가 좋을지 같이 볼까요?",
+  "오늘의 점심, 한 번 뽑아 볼까요?",
+];
+
+/** `{menu}` is always followed by punctuation or a particle-free word, so no particle has to match its last letter */
+const lunchResults = [
+  "{menu}, 어때요?",
+  "{menu}! 이거예요",
+  "오늘의 점심은 {menu}!",
+  "룰렛의 선택은 {menu}!",
+  "{menu}. 오늘은 이걸로 가요",
+  "점심 메뉴: {menu}",
+  "{menu}, 지금 딱 땡기지 않아요?",
+  "제가 보기엔 {menu}, 이거예요",
+  "{menu}! 제 직감이에요",
+  "{menu}? 나쁘지 않죠?",
+  "운명이 정했어요. {menu}!",
+  "배 속에서 {menu}, 하고 외치는 소리가 들려요",
+  "오늘은 {menu} 먹는 날이에요",
+  "{menu} 어때요? 든든할 것 같아요",
+  "{menu}! 오후에 힘이 날 거예요",
+  "오늘의 추천: {menu}",
+  "{menu}, 이거 먹으면 오후가 편해요",
+  "룰렛이 자신 있게 골랐어요. {menu}!",
+  "{menu} 한 그릇 하고 와요",
+  "점심은 {menu}, 이걸로 정했어요!",
+  "{menu}, 오늘의 정답이에요",
+  "딱 {menu} 먹을 날씨예요",
+  "{menu}! 먹고 오면 오후도 거뜬해요",
+  "제 마음은 이미 {menu}에 가 있어요",
+  "{menu}, 후회 없을 거예요",
+  "오늘은 {menu} 한번 믿어 봐요",
+  "{menu}, 이게 오늘의 운명이에요",
+  "룰렛이 멈췄어요. {menu}!",
+  "{menu}! 다녀오세요",
+  "점심 메뉴 확정: {menu}",
+  "{menu}, 지금 출발하면 줄 안 서요",
+  "{menu} 어때요? 싫으면 한 번 더 돌려요",
+  "{menu}, 이름만 들어도 배고파요",
+  "오늘은 {menu}에 마음을 맡겨 봐요",
+  "{menu}! 맛있게 먹고 오세요",
+  "룰렛의 한 수, {menu}!",
+  "{menu}, 오늘의 선택이에요",
+  "이 정도면 {menu}, 괜찮은 선택이죠?",
+  "{menu} 먹고 오후도 힘내요",
+  "정했어요, {menu}!",
+];
+
+/** From the third spin on the roulette starts to tease: lines by how many times it was spun. */
+const lunchNag = {
+  third: [
+    "이럴 거면 그냥 드시고 싶은 거 드세요...",
+    "벌써 세 번째예요. 사실 마음속에 정해 둔 거 있죠?",
+    "세 번 돌렸는데 마음에 안 든다면, 답은 이미 정해져 있는 거예요",
+    "룰렛이 슬슬 눈치 보기 시작했어요",
+    "사람은 룰렛을 돌리면서 진짜 먹고 싶은 걸 깨닫는대요",
+    "세 번째 결과예요. 이번엔 진짜일지도요",
+    "계속 돌리면 점심시간이 줄어요",
+    "혹시 룰렛이 아니라 확인이 필요했던 건 아니죠?",
+  ],
+  fourth: [
+    "네 번째예요. 룰렛이 부담스러워하고 있어요",
+    "이쯤 되면 룰렛이 아니라 제가 고민돼요",
+    "그냥 첫 번째로 가면 안 될까요?",
+    "돌릴수록 배는 더 고파져요",
+    "솔직히 말해요, 먹고 싶은 거 있죠?",
+    "룰렛이 이렇게 어려운 일인 줄 몰랐어요",
+    "네 번째 결과예요. 이게 마지막이길 바라요",
+    "메뉴 고민이 어느새 점심 고민이 되어 버렸네요",
+  ],
+  fifth: [
+    "다섯 번이면 룰렛도 포기했어요",
+    "이제 그만 정해요. 점심시간 끝나요",
+    "이쯤 되면 제가 제일 지쳤어요",
+    "룰렛 누르는 손가락 아프지 않아요?",
+    "이번에도 마음에 안 들면 그냥 아무거나 드세요",
+    "지금까지 나온 것 중에 하나 골라요, 진심이에요",
+    "이 정도면 메뉴 선택이 아니라 놀이예요",
+    "배고픈 건 룰렛 탓이 아니에요",
+  ],
+  many: [
+    "더 돌려도 되는데요, 그래도 밥은 먹어요",
+    "점심시간 끝나고도 돌리고 있겠어요",
+    "룰렛과 저는 이제 친구예요. 그러니 밥을 먹어요",
+    "말려도 돌리실 걸 알아요",
+    "이 정도면 점심이 아니라 취미예요",
+    "메뉴보다 소중한 건 점심시간이에요. 가세요",
+    "이제 밥 먹으러 가요, 제발요",
+    "그만! 이 중에 아무거나 드세요",
+  ],
+};
+
+export const lunchText = {
+  pick: "추천해 줘요",
+  good: "좋아요",
+  again: "다시",
+  empty: "점심 메뉴가 비어 있어요. 설정에서 추가해 주세요",
+};
+
+/** The question the lunch bubble opens with. */
+export const lunchAskLine = (rand: () => number = Math.random) => pick(lunchAsk, rand);
+
+/**
+ * The reply to the `spin`-th roll (1 = first). The first two just name the menu; from the third on the roulette teases
+ * and the menu is shown on its own line (`showMenu`).
+ */
+export function lunchReply(menu: string, spin: number, rand: () => number = Math.random) {
+  if (spin < 3) return { line: pick(lunchResults, rand).split("{menu}").join(menu), showMenu: false };
+  const tier = spin === 3 ? lunchNag.third : spin === 4 ? lunchNag.fourth : spin < 7 ? lunchNag.fifth : lunchNag.many;
+  return { line: pick(tier, rand), showMenu: true };
+}
+
+export const defaultLunchMenus = [
+  "김치찌개", "된장찌개", "순두부찌개", "부대찌개", "제육볶음", "비빔밥", "불고기", "칼국수", "냉면", "국밥",
+  "설렁탕", "삼계탕", "쌈밥", "갈비탕", "떡볶이", "김밥", "라면", "돈까스", "우동", "초밥",
+  "짜장면", "짬뽕", "볶음밥", "마라탕", "쌀국수", "파스타", "피자", "햄버거", "샌드위치", "샐러드",
+  "덮밥", "카레", "오므라이스", "곰탕", "순댓국", "감자탕", "닭갈비", "쭈꾸미볶음", "회덮밥", "차돌박이",
+];
+
+/* ───────── 설정 창 ───────── */
+
 export const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
 export const settingsText = {
   title: "설정",
   tabGeneral: "일반",
   tabPet: "펫",
+  tabTalk: "말 걸기",
+  talkTitle: "펫이 먼저 말을 걸어요",
+  moments: {
+    greeting: "앱을 켰을 때 인사",
+    lunch: "점심시간 30분 전에 메뉴 추천",
+    countdown: "퇴근 3시간, 1시간 전에 알림",
+    goodbye: "퇴근 5분 전에 인사",
+  },
+  lunchMenus: "점심 메뉴",
+  menuPlaceholder: "메뉴 추가 (예: 칼국수)",
+  menuReset: "기본 메뉴로 되돌리기",
   pickPet: "펫 고르기",
   petSize: "펫 크기",
   reminders: "알려줄 것들",
@@ -48,6 +506,8 @@ export const settingsText = {
   save: "저장",
   cancel: "취소",
 };
+
+/* ───────── 클릭 한마디 ───────── */
 
 /** Click one-liners every pet can say; nothing here may mention what species the pet is. */
 const commonQuips = [
@@ -175,15 +635,84 @@ const petQuipsById: Record<string, string[]> = {
 /** What this pet may say when poked: the shared lines plus its own. */
 export const quipsFor = (petId: string) => [...commonQuips, ...(petQuipsById[petId] ?? [])];
 
+/** Every line that is said whatever the pet is; the test checks none of them names a species. */
+export const sharedLines = () => [
+  ...Object.values(greetings).flat(),
+  ...Object.values(momentLines).flat(),
+  ...lunchAsk,
+  ...lunchResults,
+  ...Object.values(lunchNag).flat(),
+  ...Object.values(reminderMessages).flat(),
+  ...calendarLines,
+  ...petQuips.skipped,
+  ...petQuips.quiet,
+  ...quipsFor("none"),
+];
+
+/* ───────── 펫 창 ───────── */
+
 export const petNames: Record<string, string> = { turtle: "거북이", cat: "고양이", dog: "강아지", rabbit: "토끼" };
 
-export const petMenuText = { settings: "설정", quiet: "1시간 조용히", quit: "종료" };
+export const petMenuText = { lunch: "점심 메뉴 추천", settings: "설정", quiet: "1시간 조용히", quit: "종료" };
 
 export const petQuips = {
-  skipped: "오늘은 그만 말할게요",
-  quiet: "한 시간 동안 조용히 있을게요",
+  skipped: [
+    "오늘은 그만 말할게요",
+    "알겠어요, 오늘은 이 얘기 안 할게요",
+    "네, 오늘은 쉬어 갈게요",
+    "오늘은 모른 척할게요",
+    "이 알림은 내일 다시 올게요",
+    "알았어요, 오늘은 조용히 있을게요",
+  ],
+  quiet: [
+    "한 시간 동안 조용히 있을게요",
+    "한 시간 동안은 쥐 죽은 듯 있을게요",
+    "1시간 동안 방해 안 할게요",
+    "한 시간 뒤에 다시 올게요",
+    "집중하세요, 제가 지켜볼게요",
+    "조용히 옆에 있을게요",
+  ],
   menuHint: "마우스 오른쪽 버튼을 누르면 설정이 열려요",
 };
 
-/** `done` for repeating reminders, `got` for one-off alerts (calendar) */
-export const bubbleButtons = { done: "했어요", got: "확인했어요", snooze: "5분 뒤에 다시", skipToday: "오늘은 그만" };
+export const oneOf = (xs: readonly string[], rand: () => number = Math.random) => pick(xs, rand);
+
+/** `done` for repeating reminders, `got` for everything else (calendar, greetings); the `all*` ones close a stack */
+export const bubbleButtons = {
+  done: "했어요",
+  got: "확인했어요",
+  snooze: "5분 뒤에 다시",
+  skipToday: "오늘은 그만",
+  allDone: "모두 확인했어요",
+  allSnooze: "모두 5분 뒤에 다시",
+};
+
+/** Labels of the dev-only "테스트" tab (see src/debug.ts); not shown in a production build. */
+export const devText = {
+  tab: "테스트",
+  hint: "개발 모드에서만 보여요. 버튼을 누르면 펫 창에서 바로 재생돼요.",
+  talk: "말 걸기 미리보기",
+  greeting: "켰을 때 인사",
+  lunch: "점심 룰렛",
+  countdown3h: "퇴근 3시간 전",
+  countdown1h: "퇴근 1시간 전",
+  goodbye: "퇴근 5분 전",
+  goodbyeFriday: "퇴근 5분 전 (금요일)",
+  alerts: "알림",
+  calendar: "일정 알림 (10분 전)",
+  pile: "알림 4개 한꺼번에 (3줄까지만)",
+  clear: "말풍선 모두 닫기",
+  ttl: "말풍선 수명",
+  ttl30: "기본 (인사 1분, 알림 3분)",
+  ttl5: "5초 (빠른 확인)",
+  states: "펫 상태 고정",
+  release: "고정 해제",
+  quip: "클릭 한마디",
+  schedule: "오늘의 말 걸기 일정",
+  none: "오늘은 예정이 없어요 (근무일이 아니거나 모두 꺼져 있어요)",
+  stateNames: { idle: "평소", walk: "걷기", nag: "잔소리", sleep: "졸기", hover: "호버", click: "클릭", drag: "드래그" },
+  momentNames: { lunch: "점심 메뉴 추천", countdown3h: "퇴근 3시간 전", countdown1h: "퇴근 1시간 전", goodbye: "퇴근 5분 전" },
+  past: "지남",
+  now: "지금 보낼 수 있어요",
+  inMin: (m: number) => `${m}분 뒤`,
+};

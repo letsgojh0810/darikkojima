@@ -3,7 +3,8 @@ import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { normalizeIcsUrl } from "../../calendar/url";
-import { dayLabels, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
+import { dayLabels, defaultLunchMenus, devText, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
+import { DevPanel } from "./DevPanel";
 import { loadSettings, saveSettings } from "../../store";
 import type { CustomReminder, ReminderId, Settings } from "../../store/settings";
 import { petIds, pets } from "../../pet/anim/pets";
@@ -17,8 +18,12 @@ const dayOrder = [1, 2, 3, 4, 5, 6, 0];
 const tabs = [
   { id: "general", label: t.tabGeneral },
   { id: "pet", label: t.tabPet },
+  { id: "talk", label: t.tabTalk },
+  { id: "dev", label: devText.tab },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
+/** the test tab only exists when running `npm run tauri dev` */
+const visibleTabs = tabs.filter((x) => x.id !== "dev" || import.meta.env.DEV);
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange(v: boolean): void }) {
   return (
@@ -89,6 +94,7 @@ export function SettingsApp() {
   const [url, setUrl] = useState("");
   const [badUrl, setBadUrl] = useState(false);
   const [newText, setNewText] = useState("");
+  const [newMenu, setNewMenu] = useState("");
   const [tab, setTab] = useState<TabId>("general");
 
   // closing without saving (X or 취소) tells the pet window to drop the preview and reload what is stored
@@ -115,7 +121,16 @@ export function SettingsApp() {
   if (!s || !saved) return null;
 
   const update = setS;
-  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || auto !== saved.auto || !!url.trim() || !!newText.trim();
+  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || auto !== saved.auto || !!url.trim() || !!newText.trim() || !!newMenu.trim();
+
+  const withMenu = (list: string[]) => {
+    const m = newMenu.trim();
+    return m && !list.includes(m) ? [...list, m] : list;
+  };
+  const addMenu = () => {
+    update({ ...s, lunchMenus: withMenu(s.lunchMenus) });
+    setNewMenu("");
+  };
 
   const newCustom = (): CustomReminder[] => {
     const text = newText.trim();
@@ -131,7 +146,7 @@ export function SettingsApp() {
   const save = async () => {
     // text typed but not yet added would be lost silently, so take it along
     const pending = normalizeIcsUrl(url);
-    const next = { ...s, custom: newCustom(), icsUrls: pending && !s.icsUrls.includes(pending) ? [...s.icsUrls, pending] : s.icsUrls };
+    const next = { ...s, custom: newCustom(), lunchMenus: withMenu(s.lunchMenus), icsUrls: pending && !s.icsUrls.includes(pending) ? [...s.icsUrls, pending] : s.icsUrls };
     await saveSettings(next);
     if (auto !== saved.auto) await (auto ? enable() : disable());
     await emit("settings-changed");
@@ -160,7 +175,7 @@ export function SettingsApp() {
       </header>
 
       <nav className="tabs" role="tablist">
-        {tabs.map((x) => (
+        {visibleTabs.map((x) => (
           <button key={x.id} role="tab" aria-selected={tab === x.id} className="tab" onClick={() => setTab(x.id)}>
             {x.label}
           </button>
@@ -300,6 +315,55 @@ export function SettingsApp() {
             </div>
           </div>
         </section>
+      )}
+
+      {import.meta.env.DEV && tab === "dev" && <DevPanel s={s} />}
+
+      {tab === "talk" && (
+        <div className="cols">
+          <div className="col">
+            <Group title={t.talkTitle}>
+              {(Object.keys(t.moments) as (keyof typeof t.moments)[]).map((k) => (
+                <Row key={k} label={t.moments[k]}>
+                  <Switch checked={s.moments[k]} label={t.moments[k]} onChange={(v) => update({ ...s, moments: { ...s.moments, [k]: v } })} />
+                </Row>
+              ))}
+            </Group>
+          </div>
+
+          <div className="col">
+            <Group title={t.lunchMenus}>
+              <div className="row">
+                <input
+                  className="grow"
+                  value={newMenu}
+                  maxLength={20}
+                  placeholder={t.menuPlaceholder}
+                  onChange={(e) => setNewMenu(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addMenu()}
+                />
+                <button className="primary" disabled={!newMenu.trim()} onClick={addMenu}>
+                  {t.add}
+                </button>
+              </div>
+              <div className="chips">
+                {s.lunchMenus.map((m) => (
+                  <span className="chip" key={m}>
+                    {m}
+                    <button aria-label={`${m} ${t.remove}`} onClick={() => update({ ...s, lunchMenus: s.lunchMenus.filter((x) => x !== m) })}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="row">
+                <button className="remove" onClick={() => update({ ...s, lunchMenus: defaultLunchMenus })}>
+                  {t.menuReset}
+                </button>
+              </div>
+            </Group>
+          </div>
+        </div>
       )}
 
       <footer>

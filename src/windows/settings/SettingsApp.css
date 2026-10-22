@@ -15,6 +15,16 @@ h1 { margin: 0 4px 4px; font-size: 20px; line-height: 28px; font-weight: 700; }
 .tab[aria-selected="true"] { border-bottom-color: var(--blue); color: var(--text-1); }
 .tab:active { transform: none; }
 
+.chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 230px; padding: 8px 14px; overflow-y: auto; }
+.chip { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 4px 0 10px; border-radius: var(--r-pill); background: var(--surface-sub); color: var(--text-2); font: 500 13px/1 var(--font); }
+.chip button { width: 20px; height: 20px; padding: 0; border-radius: var(--r-pill); background: none; color: var(--text-3); line-height: 1; }
+.chip button:hover { background: var(--red-weak); color: var(--red); }
+
+.dev { flex: 1; }
+.dev-hint { margin: 8px 4px 0; padding: 0; }
+.dev-buttons { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+.dev-buttons button { height: 32px; padding: 0 12px; }
+
 .pet-tab { flex: 1; }
 .pet-tab h2 { margin-top: 20px; }
 .pets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }

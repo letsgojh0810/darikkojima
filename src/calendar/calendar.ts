@@ -59,9 +59,11 @@ export function createCalendar(d: CalendarDeps) {
   }
 
   return {
+    /** resolves when the first fetch is done, so a greeting can wait for the day's events */
     start() {
-      refresh();
+      const first = refresh();
       refreshTimer = setInterval(refresh, REFRESH_MS);
+      return first;
     },
     /** call after the settings changed */
     refresh,
@@ -70,5 +72,13 @@ export function createCalendar(d: CalendarDeps) {
       clearTimeout(alertTimer);
     },
     inMeeting: () => isInMeeting(events(), new Date()),
+    /** the earliest event that still starts later today */
+    nextEventToday(now = new Date()) {
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      return events()
+        .filter((e) => e.start >= now && e.start < midnight)
+        .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+    },
   };
 }

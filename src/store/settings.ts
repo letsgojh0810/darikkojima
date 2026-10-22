@@ -1,4 +1,18 @@
+import { defaultLunchMenus } from "../messages/ko";
+
 export type ReminderId = "legs" | "posture" | "water" | "stretch";
+
+/** Things the pet says on its own at fixed times, each with its own switch. */
+export interface Moments {
+  /** when the app starts */
+  greeting: boolean;
+  /** 30 minutes before lunch */
+  lunch: boolean;
+  /** 3 hours and 1 hour before the end of work */
+  countdown: boolean;
+  /** 5 minutes before the end of work */
+  goodbye: boolean;
+}
 
 /** A user-defined reminder: `text` is both its name in settings and what the pet says. */
 export interface CustomReminder {
@@ -15,6 +29,8 @@ export interface Settings {
   petScale: number;
   reminders: Record<ReminderId, { enabled: boolean; intervalMin: number }>;
   custom: CustomReminder[];
+  moments: Moments;
+  lunchMenus: string[];
   /** "HH:MM"; days use Date#getDay (0=Sun) */
   workHours: { start: string; end: string; days: number[] };
   lunch: { start: string; end: string };
@@ -32,6 +48,8 @@ export const defaultSettings: Settings = {
     stretch: { enabled: true, intervalMin: 90 },
   },
   custom: [],
+  moments: { greeting: true, lunch: true, countdown: true, goodbye: true },
+  lunchMenus: defaultLunchMenus,
   workHours: { start: "09:00", end: "18:00", days: [1, 2, 3, 4, 5] },
   lunch: { start: "12:00", end: "13:00" },
   icsUrls: [],

@@ -14,6 +14,20 @@ const ctx = (over: Partial<RuleContext> = {}): RuleContext => ({
   ...over,
 });
 
+describe("blockReason for greetings", () => {
+  it("ignores work hours, weekends, lunch and meetings", () => {
+    expect(blockReason(ctx({ kind: "greeting", now: at(20, "23:00") }))).toBeNull();
+    expect(blockReason(ctx({ kind: "greeting", now: at(24, "10:00") }))).toBeNull();
+    expect(blockReason(ctx({ kind: "greeting", now: at(20, "12:30") }))).toBeNull();
+    expect(blockReason(ctx({ kind: "greeting", inMeeting: true }))).toBeNull();
+  });
+
+  it("still respects quiet mode and fullscreen", () => {
+    expect(blockReason(ctx({ kind: "greeting", fullscreen: true }))).toBe("fullscreen");
+    expect(blockReason(ctx({ kind: "greeting", quietUntil: at(20, "11:00").getTime() }))).toBe("quiet");
+  });
+});
+
 describe("blockReason", () => {
   it("allows during work hours", () => expect(blockReason(ctx())).toBeNull());
 
