@@ -19,7 +19,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
-windows = { version = "0.61", features = ["Win32_UI_Shell"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-store = "2.5.0"
@@ -29,6 +28,12 @@ tauri-plugin-http = "2.8.3"
 tauri-plugin-updater = "2.14.0"
 tauri-plugin-opener = "2"
 
+# Windows only: fullscreen / presentation detection (src/fullscreen.rs)
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_UI_Shell"] }
+# macOS's transparent window needs tauri's "macos-private-api" feature; it is not listed here on purpose: the Tauri CLI
+# turns it on by itself for Mac builds (from app.macOSPrivateApi in tauri.macos.conf.json) and would strip it again on
+# every Windows build.
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

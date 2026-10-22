@@ -71,6 +71,14 @@ pub fn run() {
         .manage(HitRect::default())
         .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy, open_settings, quit_app])
         .setup(|app| {
+            // macOS: no Dock icon (like skipTaskbar on Windows), and the pet stays on every desktop (Space)
+            #[cfg(target_os = "macos")]
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_visible_on_all_workspaces(true);
+                }
+            }
             tray::setup(app)?;
             spawn_click_through_poll(app.handle().clone());
             Ok(())
