@@ -1,9 +1,13 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { checkIcs, type IcsCheck } from "../../calendar/IcsSource";
 import { isGoogleCalendarPage, normalizeIcsUrl } from "../../calendar/url";
 import {
+  accentNames,
   dayLabels,
   defaultLunchMenus,
   devText,
@@ -11,28 +15,33 @@ import {
   petNames,
   reminderLabels,
   settingsText as t,
+  colorNames,
+  secretHints,
   slotNames,
   unlockHint,
 } from "../../messages/ko";
 import { DevPanel } from "./DevPanel";
 import { loadProgress, loadSettings, saveSettings } from "../../store";
-import { isUnlocked, ITEMS, SLOTS, wearable } from "../../pet/outfit";
+import { isUnlocked, ITEMS, SLOTS, wearable, type Slot } from "../../pet/outfit";
 import { emptyProgress, levelOf, type Progress } from "../../pet/progress";
-import type { CustomReminder, PetPreview, ReminderId, Settings } from "../../store/settings";
-import { petIds, pets } from "../../pet/anim/pets";
+import { withProfile, type CustomReminder, type PetPreview, type ReminderId, type Settings } from "../../store/settings";
+import { petColors, petIds, pets } from "../../pet/anim/pets";
+import { ACCENTS, applyAppearance, type ThemeMode } from "../../theme";
 import "../../tokens.css";
 import "./SettingsApp.css";
 
 const ids = Object.keys(reminderLabels) as ReminderId[];
+const REPO = "https://github.com/letsgojh0810/darikkojima";
 /** Monday first; the stored values stay Date#getDay (0 = Sunday). */
 const dayOrder = [1, 2, 3, 4, 5, 6, 0];
-/** Add a tab here and a matching `tab === id` block below; the footer's 저장/취소 covers every tab. */
+/** Add a tab here and a matching `tab === id` block below; the footer's 저장/취소 covers remind and talk, the other tabs save live. */
 const tabs = [
   { id: "remind", label: t.tabRemind },
   { id: "calendar", label: t.tabCalendar },
   { id: "talk", label: t.tabTalk },
   { id: "pet", label: t.tabPet },
   { id: "grow", label: t.tabGrow },
+  { id: "general", label: t.tabGeneral },
   { id: "dev", label: devText.tab },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
@@ -101,15 +110,32 @@ function TimeRange({ start, end, onChange }: { start: string; end: string; onCha
 }
 
 export function SettingsApp() {
-  // edits stay in this draft until 저장; closing the window or 취소 throws them away
+  // edits stay in this draft until 저장; closing the window or 취소 throws them away (pet and grow tabs excepted, see below)
   const [s, setS] = useState<Settings>();
-  const [saved, setSaved] = useState<{ s: Settings; auto: boolean }>();
+  const [saved, setSaved] = useState<{ s: Settings }>();
   const [auto, setAuto] = useState(false);
   const [url, setUrl] = useState("");
+  const [newCalName, setNewCalName] = useState("");
+  /** the calendar whose name is being edited (by URL) */
+  const [editingCal, setEditingCal] = useState<string | null>(null);
   const [badUrl, setBadUrl] = useState<string>();
   const [newText, setNewText] = useState("");
   const [newMenu, setNewMenu] = useState("");
   const [tab, setTab] = useState<TabId>("remind");
+  const [version, setVersion] = useState("");
+  useEffect(() => {
+    getVersion().then(setVersion);
+  }, []);
+  const [checks, setChecks] = useState<Record<string, IcsCheck | "busy">>({});
+  const check = async (u: string) => {
+    setChecks((m) => ({ ...m, [u]: "busy" }));
+    const r = await checkIcs(u);
+    setChecks((m) => ({ ...m, [u]: r }));
+  };
+  // opening the calendar tab checks every address once, so the upcoming list fills itself
+  useEffect(() => {
+    if (tab === "calendar") s?.icsUrls.filter((u) => !checks[u]).forEach(check);
+  }, [tab]);
 
   // closing without saving (X or 취소) tells the pet window to drop the preview and reload what is stored
   useEffect(() => {
@@ -119,14 +145,20 @@ export function SettingsApp() {
     };
   }, []);
 
-  // read-only here: closeness is earned in the pet window
+  // read-only here: closeness is earned in the pet window, which sends every change
   const [progress, setProgress] = useState<Progress>();
   useEffect(() => {
     loadProgress().then(setProgress);
+    const unlisten = listen<Progress>("progress-changed", (e) => setProgress(e.payload));
+    return () => {
+      unlisten.then((f) => f());
+    };
   }, []);
   const lv = levelOf(progress?.exp ?? 0);
   const titles = progress?.titles ?? [];
   const [confirmReset, setConfirmReset] = useState(false);
+  const [slot, setSlot] = useState<Slot>("head");
+  const [hoverPet, setHoverPet] = useState<string | null>(null);
   const barPct = lv.max ? 100 : (lv.into / lv.need) * 100;
   const Preview = pets[s?.pet ?? ""] ?? pets.cat;
 
@@ -134,26 +166,60 @@ export function SettingsApp() {
     Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
       setS(loaded);
       setAuto(on);
-      setSaved({ s: loaded, auto: on });
+      setSaved({ s: loaded });
     });
   }, []);
 
-  // everything on the pet tab shows on the pet right away; 저장 keeps it, 취소 or closing reloads what is stored
+  // the general, pet and grow tabs have no 저장: what is picked there shows at once (on the pet too) and is stored,
+  // leaving the other tabs' unsaved edits alone
   const preview: PetPreview | undefined = s && {
     pet: s.pet,
     petScale: s.petScale,
     petProfiles: s.petProfiles,
     petLabel: s.petLabel,
+    theme: s.theme,
+    accent: s.accent,
   };
   const previewKey = JSON.stringify(preview ?? null);
   useEffect(() => {
-    if (preview) emit("pet-preview", preview);
+    if (!preview || !saved) return;
+    applyAppearance(preview.theme, preview.accent);
+    emit("pet-preview", preview);
+    const next = { ...saved.s, ...preview };
+    if (JSON.stringify(next) === JSON.stringify(saved.s)) return;
+    saveSettings(next);
+    setSaved({ ...saved, s: next });
     // previewKey stands for the preview's content, which is what should trigger a resend
-  }, [previewKey]);
+  }, [previewKey, !!saved]);
   if (!s || !saved) return null;
+  const live = tab === "general" || tab === "calendar" || tab === "pet" || tab === "grow";
+  const calName = (u: string) => s.icsNames[u]?.trim() || new URL(u).host;
+  const upcoming = s.icsUrls
+    .flatMap((u) => {
+      const c = checks[u];
+      return c && c !== "busy" && c.ok ? c.events.map((e) => ({ e, cal: u })) : [];
+    })
+    .sort((a, b) => a.e.start.getTime() - b.e.start.getTime());
 
   const update = setS;
-  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || auto !== saved.auto || !!url.trim() || !!newText.trim() || !!newMenu.trim();
+  /**
+   * Applies a change and stores it at once, leaving other tabs' unsaved edits alone (the calendar tab works this way: a
+   * calendar added there and then left behind on another tab used to be lost). `notify` makes the pet window reload.
+   */
+  const commitNow = (patch: Partial<Settings>, notify = true) => {
+    update({ ...s, ...patch });
+    const next = { ...saved.s, ...patch };
+    setSaved({ s: next });
+    saveSettings(next).then(() => {
+      if (notify) emit("settings-changed");
+    });
+  };
+  // a system setting, applied the moment it is flipped like everything else on the general tab
+  const setAutostart = async (on: boolean) => {
+    await (on ? enable() : disable());
+    setAuto(on);
+  };
+  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || !!url.trim() || !!newText.trim() || !!newMenu.trim();
 
   const withMenu = (list: string[]) => {
     const m = newMenu.trim();
@@ -175,13 +241,19 @@ export function SettingsApp() {
   const setCustom = (id: string, patch: Partial<CustomReminder>) =>
     update({ ...s, custom: s.custom.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
 
+  /** the typed calendar (with its name, if one was given) added to the list; nothing when the address is not usable */
+  const withCalendar = (u: string | null) =>
+    !u || isGoogleCalendarPage(u)
+      ? {}
+      : {
+          icsUrls: s.icsUrls.includes(u) ? s.icsUrls : [...s.icsUrls, u],
+          icsNames: newCalName.trim() ? { ...s.icsNames, [u]: newCalName.trim() } : s.icsNames,
+        };
+
   const save = async () => {
     // text typed but not yet added would be lost silently, so take it along
-    const typed = normalizeIcsUrl(url);
-    const pending = typed && !isGoogleCalendarPage(typed) ? typed : null;
-    const next = { ...s, custom: newCustom(), lunchMenus: withMenu(s.lunchMenus), icsUrls: pending && !s.icsUrls.includes(pending) ? [...s.icsUrls, pending] : s.icsUrls };
+    const next = { ...s, custom: newCustom(), lunchMenus: withMenu(s.lunchMenus), ...withCalendar(normalizeIcsUrl(url)) };
     await saveSettings(next);
-    if (auto !== saved.auto) await (auto ? enable() : disable());
     await emit("settings-changed");
     await getCurrentWindow().close();
   };
@@ -192,8 +264,10 @@ export function SettingsApp() {
     const u = normalizeIcsUrl(url);
     setBadUrl(!u ? t.badUrl : isGoogleCalendarPage(u) ? t.googlePage : undefined);
     if (!u || isGoogleCalendarPage(u)) return;
-    if (!s.icsUrls.includes(u)) update({ ...s, icsUrls: [...s.icsUrls, u] });
+    commitNow(withCalendar(u));
     setUrl("");
+    setNewCalName("");
+    check(u); // a new address is checked right away
   };
 
   const toggleDay = (d: number) => {
@@ -215,6 +289,67 @@ export function SettingsApp() {
       </aside>
 
       <div className="content">
+
+      {tab === "general" && (
+        <div className="cols">
+          <div className="col">
+            <Group title={t.looks}>
+              <Row label={t.themeLabel}>
+                <div className="seg" role="radiogroup" aria-label={t.themeLabel}>
+                  {(Object.keys(t.themeOptions) as ThemeMode[]).map((k) => (
+                    <button key={k} role="radio" aria-checked={s.theme === k} onClick={() => update({ ...s, theme: k })}>
+                      {t.themeOptions[k]}
+                    </button>
+                  ))}
+                </div>
+              </Row>
+              <Row label={t.accentLabel}>
+                <div className="swatches" role="radiogroup" aria-label={t.accentLabel}>
+                  {Object.entries(ACCENTS).map(([id, hex]) => (
+                    <button
+                      key={id}
+                      role="radio"
+                      className="swatch"
+                      style={{ background: hex }}
+                      title={accentNames[id]}
+                      aria-label={accentNames[id]}
+                      aria-checked={(ACCENTS[s.accent] ? s.accent : "coral") === id}
+                      onClick={() => update({ ...s, accent: id })}
+                    />
+                  ))}
+                </div>
+              </Row>
+            </Group>
+
+            <Group title={t.system}>
+              <Row label={t.autostart}>
+                <Switch checked={auto} label={t.autostart} onChange={setAutostart} />
+              </Row>
+            </Group>
+          </div>
+
+          <div className="col">
+            <Group title={t.about}>
+              <div className="about">
+                <img src="/favicon.svg" alt="" width="48" height="48" />
+                <div>
+                  <strong>{t.appName}</strong> <span className="ver">v{version}</span>
+                  <p>{t.tagline}</p>
+                </div>
+              </div>
+              <div className="row about-links">
+                <button className="secondary small" onClick={() => openUrl(REPO)}>
+                  ★ {t.star}
+                </button>
+                <button className="text-btn" onClick={() => openUrl(`${REPO}/issues`)}>
+                  {t.report}
+                </button>
+              </div>
+              <p className="copyright">{t.copyright(new Date().getFullYear())}</p>
+            </Group>
+          </div>
+        </div>
+      )}
 
       {tab === "remind" && (
       <div className="cols">
@@ -276,12 +411,6 @@ export function SettingsApp() {
               <TimeRange start={s.lunch.start} end={s.lunch.end} onChange={(start, end) => update({ ...s, lunch: { start, end } })} />
             </Row>
           </Group>
-
-          <Group title={t.system}>
-            <Row label={t.autostart}>
-              <Switch checked={auto} label={t.autostart} onChange={setAuto} />
-            </Row>
-          </Group>
         </div>
       </div>
       )}
@@ -291,19 +420,71 @@ export function SettingsApp() {
         <div className="col">
           <Group title={t.calendar}>
             <Row desc={t.calendarHint} />
-            {s.icsUrls.map((u) => (
+            {s.icsUrls.map((u) => {
+              const c = checks[u];
+              const { [u]: _, ...otherNames } = s.icsNames;
+              const status = c === "busy" ? t.checking : c ? (c.ok ? t.check.ok(c.events.length) : c.reason) : t.notChecked;
               // private ICS links are secret tokens: show only the host, the full URL stays in the tooltip
-              <Row key={u} label={`${new URL(u).host} …`}>
-                <button className="remove" title={u} onClick={() => update({ ...s, icsUrls: s.icsUrls.filter((x) => x !== u) })}>
-                  {t.remove}
-                </button>
-              </Row>
-            ))}
+              return editingCal === u ? (
+                <div key={u} className="cal-edit">
+                  <div className="row">
+                    <input
+                      className="grow"
+                      autoFocus
+                      value={s.icsNames[u] ?? ""}
+                      maxLength={20}
+                      placeholder={t.calNamePlaceholder}
+                      aria-label={t.calNamePlaceholder}
+                      // a name is only shown here, so the pet window need not reload on every key
+                      onChange={(e) => commitNow({ icsNames: { ...s.icsNames, [u]: e.target.value } }, false)}
+                      onKeyDown={(e) => e.key === "Enter" && setEditingCal(null)}
+                    />
+                  </div>
+                  <div className="row actions">
+                    <button className="remove check" disabled={c === "busy"} onClick={() => check(u)}>
+                      {t.recheck}
+                    </button>
+                    <button
+                      className="remove"
+                      title={u}
+                      onClick={() => {
+                        commitNow({ icsUrls: s.icsUrls.filter((x) => x !== u), icsNames: otherNames });
+                        setEditingCal(null);
+                      }}
+                    >
+                      {t.remove}
+                    </button>
+                    <button className="secondary small" onClick={() => setEditingCal(null)}>
+                      {t.done}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={u} className="row">
+                  <div className="text">
+                    <div className="label ellipsis">{calName(u)}</div>
+                    <div className={`desc cal-status${c && c !== "busy" ? (c.ok ? " ok" : " bad") : ""}`} title={c && c !== "busy" && !c.ok ? c.reason : u}>
+                      {new URL(u).host} · {status}
+                    </div>
+                  </div>
+                  <button className="remove check" onClick={() => setEditingCal(u)}>
+                    {t.edit}
+                  </button>
+                </div>
+              );
+            })}
+          </Group>
+
+          <Group title={t.addCalendar}>
+            <div className="row">
+              <input className="grow" value={newCalName} maxLength={20} placeholder={t.calNamePlaceholder} aria-label={t.calNamePlaceholder} onChange={(e) => setNewCalName(e.target.value)} />
+            </div>
             <div className="row">
               <input
                 className="grow"
                 value={url}
                 placeholder={t.urlPlaceholder}
+                aria-label={t.urlPlaceholder}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addUrl()}
               />
@@ -317,7 +498,7 @@ export function SettingsApp() {
           <Group title={t.leadGroup}>
             <Row label={t.lead}>
               <span className="unit">
-                <NumberField value={s.calendarLeadMin} min={1} max={120} onCommit={(n) => update({ ...s, calendarLeadMin: n })} />
+                <NumberField value={s.calendarLeadMin} min={1} max={120} onCommit={(n) => commitNow({ calendarLeadMin: n })} />
                 {t.leadUnit}
               </span>
             </Row>
@@ -325,7 +506,43 @@ export function SettingsApp() {
         </div>
 
         <div className="col">
-          <Group title={t.guideTitle}>
+          <section>
+            {/* fetches every calendar again, here and in the pet window, for events added since the last look */}
+            <div className="h2row">
+              <h2>{t.upcomingTitle}</h2>
+              {s.icsUrls.length > 0 && (
+                <button
+                  className="text-btn"
+                  disabled={s.icsUrls.some((u) => checks[u] === "busy")}
+                  onClick={() => {
+                    s.icsUrls.forEach(check);
+                    emit("settings-changed");
+                  }}
+                >
+                  {t.refresh}
+                </button>
+              )}
+            </div>
+            <div className="group">
+            {upcoming.length ? (
+              <ul className="events">
+                {upcoming.map(({ e, cal }) => (
+                  <li key={`${cal}${e.uid}${e.start.getTime()}`}>
+                    <span className="when">{t.eventWhen(e.start)}</span>
+                    <span className="what" title={e.title}>{e.title}</span>
+                    {s.icsUrls.length > 1 && <span className="cal">{calName(cal)}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Row desc={!s.icsUrls.length ? t.upcomingNoCal : s.icsUrls.some((u) => checks[u] === "busy") ? t.checking : t.upcomingNone} />
+            )}
+            </div>
+          </section>
+
+          {/* the guide is needed once, when adding the first address, so it stays folded away */}
+          <details className="guide-box" open={!s.icsUrls.length}>
+            <summary>{t.guideTitle}</summary>
             <div className="guide">
               <h3>{t.guideGoogle}</h3>
               <ol>
@@ -341,7 +558,7 @@ export function SettingsApp() {
               </ol>
               <p>{t.guideNote}</p>
             </div>
-          </Group>
+          </details>
         </div>
       </div>
       )}
@@ -359,9 +576,18 @@ export function SettingsApp() {
             {petIds.map((id) => {
               const Anim = pets[id];
               return (
-                <button key={id} className="pet-card" aria-pressed={s.pet === id} onClick={() => update({ ...s, pet: id })}>
-                  <Anim state="idle" />
-                  <span>{petNames[id] ?? id}</span>
+                // no label, so the pets answer instead: the picked one smiles, one under the mouse hops once
+                <button
+                  key={id}
+                  className="pet-card"
+                  aria-pressed={s.pet === id}
+                  aria-label={petNames[id]}
+                  title={petNames[id]}
+                  onClick={() => update({ ...s, pet: id })}
+                  onMouseEnter={() => setHoverPet(id)}
+                  onMouseLeave={() => setHoverPet(null)}
+                >
+                  <Anim state={hoverPet === id ? "click" : s.pet === id ? "hover" : "idle"} color={s.petProfiles[id]?.color} />
                 </button>
               );
             })}
@@ -376,8 +602,25 @@ export function SettingsApp() {
                     value={s.petProfiles[s.pet]?.name ?? ""}
                     maxLength={8}
                     placeholder={petNames[s.pet]}
-                    onChange={(e) => update({ ...s, petProfiles: { ...s.petProfiles, [s.pet]: { name: e.target.value } } })}
+                    onChange={(e) => update(withProfile(s, s.pet, { name: e.target.value }))}
                   />
+                </Row>
+                <Row label={t.petColor}>
+                  <div className="swatches" role="radiogroup" aria-label={t.petColor}>
+                    {(petColors[s.pet] ?? []).map((c, _, list) => (
+                      <button
+                        key={c.id}
+                        role="radio"
+                        className="swatch"
+                        style={{ background: c.swatch }}
+                        title={colorNames[c.id]}
+                        aria-label={colorNames[c.id]}
+                        // no (or an unknown) colour stored means the first, which is what the pet draws
+                        aria-checked={(list.find((x) => x.id === s.petProfiles[s.pet]?.color) ?? list[0]).id === c.id}
+                        onClick={() => update(withProfile(s, s.pet, { color: c.id }))}
+                      />
+                    ))}
+                  </div>
                 </Row>
               </Group>
             </div>
@@ -420,7 +663,7 @@ export function SettingsApp() {
           <div className="col">
             {/* what the draft outfit looks like, before 저장 */}
             <div className="outfit-preview" aria-hidden>
-              <Preview state="idle" outfit={wearable(s.petProfiles[s.pet]?.outfit, lv.level, titles)} />
+              <Preview state="idle" outfit={wearable(s.petProfiles[s.pet]?.outfit, lv.level, titles)} color={s.petProfiles[s.pet]?.color} />
             </div>
 
             <Group title={t.level}>
@@ -466,43 +709,39 @@ export function SettingsApp() {
           <div className="col">
             <Group title={t.wardrobe(s.petProfiles[s.pet]?.name.trim() || petNames[s.pet])}>
               <Row desc={t.secretCount(ITEMS.filter((it) => it.title && titles.includes(it.title)).length, ITEMS.filter((it) => it.title).length)} />
-              {SLOTS.map((slot) => {
+              {/* one slot at a time keeps the tab short; the head alone has over a dozen pieces */}
+              <div className="row">
+                <div className="seg" role="tablist" aria-label={t.wardrobeSlots}>
+                  {SLOTS.map((x) => (
+                    <button key={x} role="tab" aria-checked={slot === x} aria-selected={slot === x} onClick={() => setSlot(x)}>
+                      {slotNames[x]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {[slot].map((slot) => {
                 const worn = s.petProfiles[s.pet]?.outfit?.[slot];
-                const wear = (id: string | undefined) =>
-                  update({
-                    ...s,
-                    petProfiles: {
-                      ...s.petProfiles,
-                      [s.pet]: { name: s.petProfiles[s.pet]?.name ?? "", outfit: { ...s.petProfiles[s.pet]?.outfit, [slot]: id } },
-                    },
-                  });
+                const wear = (id: string | undefined) => update(withProfile(s, s.pet, { outfit: { ...s.petProfiles[s.pet]?.outfit, [slot]: id } }));
                 return (
                   <div className="row stack" key={slot}>
-                    <div className="label">{slotNames[slot]}</div>
                     <div className="choices tight">
                       <button className="choice" aria-pressed={!worn} onClick={() => wear(undefined)}>
                         {t.itemNone}
                       </button>
                       {ITEMS.filter((it) => it.slot === slot).map((it) => {
                         const open = isUnlocked(it, lv.level, titles);
-                        // a locked level item says its level; a secret one shows nothing but that it exists
-                        if (!open && it.title)
-                          return (
-                            <button key={it.id} className="choice secret" disabled title={t.secretHint}>
-                              ???
-                            </button>
-                          );
+                        // a locked item shows its name with its level, or 히든 and a vague hint for a secret one
                         return (
                           <button
                             key={it.id}
                             className={it.title ? "choice found" : "choice"}
                             disabled={!open}
                             aria-pressed={worn === it.id}
-                            title={open ? undefined : unlockHint(it)}
+                            title={open ? undefined : it.title ? secretHints[it.title] : unlockHint(it)}
                             onClick={() => wear(it.id)}
                           >
                             {itemNames[it.id]}
-                            {!open && <span className="need">Lv.{it.level}</span>}
+                            {!open && <span className={it.title ? "need secret" : "need"}>{it.title ? t.secretBadge : `Lv.${it.level}`}</span>}
                           </button>
                         );
                       })}
@@ -565,12 +804,16 @@ export function SettingsApp() {
       )}
 
       <footer>
+        {/* a live tab hides 저장, unless another tab still has edits that closing would throw away */}
+        {live && <span className="desc">{dirty ? t.otherUnsaved : t.liveSaved}</span>}
         <button className="secondary" onClick={() => getCurrentWindow().close()}>
           {t.cancel}
         </button>
-        <button className="primary" disabled={!dirty} onClick={save}>
-          {t.save}
-        </button>
+        {(!live || dirty) && (
+          <button className="primary" disabled={!dirty} onClick={save}>
+            {t.save}
+          </button>
+        )}
       </footer>
       </div>
     </main>

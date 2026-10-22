@@ -1,6 +1,6 @@
 [package]
 name = "darikkojima"
-version = "0.2.0"
+version = "0.2.1"
 description = "한국 직장인을 위한 데스크탑 펫 리마인더"
 authors = ["hanjh"]
 edition = "2024"
@@ -27,6 +27,7 @@ tauri-plugin-single-instance = "2.5.4"
 tauri-plugin-autostart = "2.7.0"
 tauri-plugin-http = "2.8.3"
 tauri-plugin-updater = "2.14.0"
+tauri-plugin-opener = "2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

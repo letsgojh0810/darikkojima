@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CalEvent } from "../../calendar/CalendarSource";
 import { IcsSource } from "../../calendar/IcsSource";
-import { applyTheme, sendDebug } from "../../debug";
+import { sendDebug } from "../../debug";
 import { momentsOf } from "../../greetings/moments";
 import { devText as d, petNames, reminderLabels } from "../../messages/ko";
 import { petIds } from "../../pet/anim/pets";
@@ -33,7 +33,6 @@ const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.g
 
 export function DevPanel({ s }: { s: Settings }) {
   const schedule = momentsOf(new Date(), s);
-  const [mode, setMode] = useState<"light" | "dark" | null>(document.documentElement.dataset.theme === "light" ? "light" : document.documentElement.dataset.theme === "dark" ? "dark" : null);
   const [events, setEvents] = useState<CalEvent[]>();
   const [error, setError] = useState<string>();
 
@@ -81,23 +80,6 @@ export function DevPanel({ s }: { s: Settings }) {
         </div>
 
         <div className="col">
-          <Buttons title={d.theme}>
-            {([null, "light", "dark"] as const).map((m) => (
-              <button
-                key={String(m)}
-                className={mode === m ? "primary" : "secondary"}
-                onClick={() => {
-                  setMode(m);
-                  applyTheme(m); // this window
-                  sendDebug({ type: "theme", mode: m }); // the pet window
-                }}
-              >
-                {m === null ? d.themeSystem : m === "light" ? d.themeLight : d.themeDark}
-              </button>
-            ))}
-            <span className="desc">{d.osNow(window.matchMedia("(prefers-color-scheme: dark)").matches)}</span>
-          </Buttons>
-
           <Buttons title={d.progress}>
             {[10, 50].map((n) => (
               <button key={n} className="secondary" onClick={() => sendDebug({ type: "exp", amount: n })}>

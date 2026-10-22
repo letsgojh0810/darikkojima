@@ -39,8 +39,8 @@
   padding: 0 10px;
   border: 0;
   border-radius: var(--r-sm);
-  background: var(--blue-weak);
-  color: var(--blue);
+  background: var(--accent-weak);
+  color: var(--accent);
   font: 600 13px/1 var(--font);
   cursor: pointer;
 }
@@ -54,16 +54,16 @@
   height: 44px;
   border: 0;
   border-radius: var(--r-md);
-  background: var(--blue);
-  color: var(--on-blue);
+  background: var(--accent);
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: background var(--dur), transform var(--dur);
 }
-.bubble-ok:hover { background: var(--blue-press); }
+.bubble-ok:hover { background: var(--accent-press); }
 .bubble-ok:disabled { background: var(--disabled); cursor: default; }
-.bubble .menu { font-size: 18px; font-weight: 700; color: var(--blue); }
+.bubble .menu { font-size: 18px; font-weight: 700; color: var(--accent); }
 .bubble-ok:active { transform: scale(0.98); }
 .bubble-ok:focus-visible, .bubble-actions button:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
 

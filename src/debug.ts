@@ -18,17 +18,9 @@ export type DebugCmd =
   /** jumps straight to the first point of a level (Lv.1 = 0 points, i.e. a reset) */
   | { type: "level"; level: number }
   | { type: "levelUp" }
-  /** Lv.10 and every title, so all clothes are open */
+  /** Lv.10 and every secret, so all clothes are open */
   | { type: "unlockAll" }
   /** shows another pet without saving, to look at each one's moods and moves */
-  | { type: "pet"; id: string }
-  /** null = follow Windows again */
-  | { type: "theme"; mode: "light" | "dark" | null };
-
-/** Forces (or releases) light/dark in the current window; the settings tab also sends it to the pet window. */
-export function applyTheme(mode: "light" | "dark" | null) {
-  if (mode) document.documentElement.dataset.theme = mode;
-  else delete document.documentElement.dataset.theme;
-}
+  | { type: "pet"; id: string };
 
 export const sendDebug = (cmd: DebugCmd) => emit("debug", cmd);

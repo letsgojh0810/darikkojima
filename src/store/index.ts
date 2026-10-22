@@ -1,13 +1,14 @@
+import { emit } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
 import { normalizeProgress, type Progress } from "../pet/progress";
-import { defaultSettings, type Settings } from "./settings";
+import { defaultSettings, migrateSettings, type Settings } from "./settings";
 
 const store = new LazyStore("settings.json");
 
 export async function loadSettings(): Promise<Settings> {
   const saved = await store.get<Partial<Settings>>("settings");
   // shortcut: shallow merge, so a new nested default is missed for old files; deep-merge when the schema first changes
-  return { ...defaultSettings, ...saved };
+  return migrateSettings({ ...defaultSettings, ...saved });
 }
 
 export type Pos = { x: number; y: number };
@@ -22,9 +23,11 @@ export async function savePetPos(p: Pos): Promise<void> {
 /** closeness lives apart from the settings: the app writes it, so the settings window's 저장/취소 never touches it */
 export const loadProgress = async () => normalizeProgress((await store.get<Partial<Progress>>("progress")) ?? undefined, new Date());
 
+/** also tells an open settings window, so its level and wardrobe follow the pet live */
 export async function saveProgress(p: Progress): Promise<void> {
   await store.set("progress", p);
   await store.save();
+  await emit("progress-changed", p);
 }
 
 export async function saveSettings(s: Settings): Promise<void> {

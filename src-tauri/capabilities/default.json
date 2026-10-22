@@ -15,6 +15,10 @@
       "identifier": "http:default",
       "allow": [{ "url": "https://*" }, { "url": "https://*/**" }, { "url": "http://*" }, { "url": "http://*/**" }, { "url": "http://*:*/**" }, { "url": "https://*:*/**" }]
     },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://github.com/letsgojh0810/*" }]
+    },
     "autostart:allow-enable",
     "autostart:allow-disable",
     "autostart:allow-is-enabled"

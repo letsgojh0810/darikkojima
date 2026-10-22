@@ -579,14 +579,26 @@ export const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
 export const settingsText = {
   title: "설정",
+  tabGeneral: "일반",
+  looks: "화면",
+  themeLabel: "모드",
+  themeOptions: { system: "시스템", light: "라이트", dark: "다크" },
+  accentLabel: "대표 색",
+  about: "정보",
+  appName: "다리꼬지마",
+  tagline: "책상 위에서 자세와 물을 챙겨 주는 작은 친구",
+  star: "GitHub에서 별 눌러 주기",
+  report: "문제 알리기",
+  copyright: (year: number) => `© ${year} 다리꼬지마. All rights reserved.`,
   tabRemind: "알림",
   tabCalendar: "일정",
   tabPet: "펫",
   tabGrow: "성장",
   wardrobe: (name: string) => `옷장 · ${name}`,
   secretCount: (n: number, total: number) => `숨은 옷 ${n}/${total} · 꾸준히 챙기면 펫이 몰래 선물해요`,
-  secretHint: "숨은 옷이에요. 어떻게 열리는지는 비밀이에요",
+  secretBadge: "히든",
   itemNone: "없음",
+  wardrobeSlots: "옷 종류",
   resetOpen: "친밀도 초기화",
   resetTitle: "정말 처음부터 다시 시작할까요?",
   resetWarn: "레벨, 친밀도, 숨은 옷, 그동안의 기록이 모두 사라지고 되돌릴 수 없어요. 펫과 이름, 다른 설정은 그대로예요.",
@@ -608,6 +620,7 @@ export const settingsText = {
   petSize: "펫 크기",
   profile: "내 펫",
   petName: "이름",
+  petColor: "색깔",
   level: "친밀도",
   levelNext: (points: number) => `다음 레벨까지 ${points}점`,
   levelMax: "최고 레벨이에요",
@@ -641,10 +654,33 @@ export const settingsText = {
   badUrl: "주소가 올바르지 않아요. https://로 시작하는지 확인해 주세요",
   googlePage: "캘린더 화면 주소예요. 캘린더 설정 → 캘린더 통합의 'iCal 형식의 비공개 주소'를 붙여 넣어 주세요",
   notFeed: "캘린더 형식이 아니에요. 'iCal 형식의 비공개 주소'를 붙여 넣었는지 확인해 주세요",
+  edit: "수정",
+  done: "완료",
+  recheck: "연결 다시 확인",
+  addCalendar: "캘린더 추가",
+  checking: "확인하는 중…",
+  notChecked: "아직 확인하지 않았어요",
+  calNamePlaceholder: "이름 (예: 내 캘린더, 팀 캘린더)",
+  upcomingTitle: "앞으로 7일 일정",
+  upcomingNoCal: "캘린더를 추가하면 앞으로 7일 동안의 일정이 여기 보여요",
+  upcomingNone: "앞으로 7일 동안은 일정이 없어요",
+  eventWhen: (d: Date) =>
+    `${d.getMonth() + 1}/${d.getDate()} (${dayLabels[d.getDay()]}) ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+  check: {
+    ok: (n: number) => (n ? `연결됐어요. 앞으로 7일 동안 일정 ${n}개` : "연결됐어요. 앞으로 7일 동안은 일정이 없어요"),
+    offline: "연결하지 못했어요. 인터넷이 연결돼 있는지, 회사 네트워크가 막고 있지 않은지 확인해 주세요",
+    denied: "접근이 막혔어요. 비공개 주소가 맞는지, 회사 계정이라면 관리자가 막아 두지 않았는지 확인해 주세요",
+    gone: "주소를 찾을 수 없어요. 캘린더에서 주소를 '재설정'했다면 새 주소를 다시 복사해 주세요",
+    status: (code: number) => `캘린더 서버가 응답하지 않아요 (오류 ${code}). 잠시 뒤에 다시 확인해 주세요`,
+    broken: "캘린더 내용을 읽지 못했어요. 다른 캘린더의 주소로 시도해 보세요",
+  },
+  liveSaved: "이 탭은 바꾸는 즉시 저장돼요",
+  otherUnsaved: "다른 탭에 저장하지 않은 변경이 있어요",
   system: "기본 설정",
   autostart: "컴퓨터를 켜면 같이 시작해요",
   save: "저장",
-  cancel: "취소",
+  cancel: "닫기",
+  refresh: "새로고침",
 };
 
 /* ───────── 클릭 한마디 ───────── */
@@ -708,19 +744,21 @@ const commonQuips = [
 
 /** Species-specific lines, keyed by pet id (see pet/anim/pets.ts). */
 const petQuipsById: Record<string, string[]> = {
-  turtle: [
-    "저 느려도 일은 잘해요",
-    "거북이라고 무시하지 마세요",
-    "야근은 거북이도 싫어요",
-    "느려도 멈추지 않으면 돼요",
-    "토끼는 낮잠 자다 졌어요",
-    "저 사실 헤엄도 잘 쳐요",
-    "등껍질은 제 집이에요, 월세는 없어요",
-    "목이 짧은 게 아니라 넣은 거예요",
-    "거북이가 오래 산다더니, 전 아직 어려요",
-    "저는 상추를 좋아해요",
-    "등껍질 속으로 숨고 싶은 날이에요",
-    "느리지만 오늘도 출근했어요",
+  robot: [
+    "삐빅, 업무 효율 분석 중이에요",
+    "삐리빅! 칭찬을 감지했어요",
+    "충전 중이에요... 아니, 일하는 중이에요",
+    "안테나에 좋은 기운이 잡혀요",
+    "오늘도 버그 없이 가 봐요",
+    "전 커피 대신 전기를 마셔요",
+    "AI라고 다 아는 건 아니에요",
+    "재부팅하고 싶은 날이에요",
+    "배터리 100%, 기분도 100%",
+    "오류 없음. 기분 좋음.",
+    "안테나 만지면 간지러워요",
+    "제가 대신 일해 드리면 좋을 텐데요",
+    "학습 결과: 당신은 오늘도 열심히 했어요",
+    "로딩 중... 아, 그냥 멍때렸어요",
   ],
   cat: [
     "야옹~",
@@ -768,7 +806,7 @@ const petQuipsById: Record<string, string[]> = {
     "한 번 점프하면 퇴근길이에요",
     "양배추도 좋아해요",
     "깜짝이야, 놀랐잖아요",
-    "토끼와 거북이 얘기는 거북이 쪽이 이겨서 싫어요",
+    "토끼와 거북이 얘기는 다시 하면 제가 이겨요",
   ],
 };
 
@@ -812,6 +850,8 @@ export const itemNames: Record<string, string> = {
   nightcap: "수면 모자",
   locket: "하트 목걸이",
   badge: "사원증",
+  airpods: "에어팟",
+  headset: "회의용 헤드셋",
 };
 
 export const slotNames = { head: "머리", face: "얼굴", neck: "목" };
@@ -831,7 +871,21 @@ const secretLines: Record<string, string> = {
   roulette: "점심 룰렛 단골손님이네요! 요리사 모자 하나 드릴게요",
   goodbye20: "퇴근 인사만 20번째예요. 푹 쉬라고 수면 모자 선물이에요",
   petter: "벌써 500번이나 쓰다듬어 줬어요! 하트 목걸이 받아 주세요",
-  meetings: "일정 30개를 함께 버텼어요! 사원증 하나 만들어 왔어요",
+  meetings: "일정 30개를 함께 버텼어요! 회의용 헤드셋을 선물할게요",
+};
+/** hover hints on a secret item not found yet: enough to guess at, without the exact count */
+export const secretHints: Record<string, string> = {
+  water10: "물 마시기 알림을 몇 번 챙기면 받을 수 있어요",
+  water100: "물 마시기를 아주 오래 챙기면 받을 수 있어요",
+  posture50: "허리 펴기를 꾸준히 챙기면 받을 수 있어요",
+  legs100: "다리 꼬지 않기를 정말 많이 지키면 받을 수 있어요",
+  stretch50: "스트레칭을 꾸준히 챙기면 받을 수 있어요",
+  streak7: "일주일 동안 하루도 빠짐없이 알림을 챙기면 받을 수 있어요",
+  streak30: "한 달 내내 빠짐없이 챙기면 받을 수 있어요",
+  roulette: "점심 메뉴 룰렛을 자주 돌리다 보면 받을 수 있어요",
+  goodbye20: "퇴근 인사를 여러 번 듣다 보면 받을 수 있어요",
+  petter: "펫을 아주 많이 쓰다듬어 주면 받을 수 있어요",
+  meetings: "일정 알림을 많이 받다 보면 받을 수 있어요",
 };
 const itemGotLines = ["옷장에 새 옷이 생겼어요: {x}", "{x}, 입어 볼래요? 설정 → 성장에 있어요", "새 옷 {x}! 어울릴 것 같아요"];
 
@@ -882,7 +936,30 @@ export const sharedLines = () => [
 
 /* ───────── 펫 창 ───────── */
 
-export const petNames: Record<string, string> = { turtle: "거북이", cat: "고양이", dog: "강아지", rabbit: "토끼" };
+export const petNames: Record<string, string> = { cat: "고양이", dog: "강아지", rabbit: "토끼", robot: "AI봇" };
+
+/** accent ids from src/theme.ts */
+export const accentNames: Record<string, string> = { coral: "코랄", blue: "블루", mint: "민트", lavender: "라벤더", charcoal: "차콜" };
+
+/** coat colour ids from each pet's list (pet/anim/*.tsx *_COLORS) */
+export const colorNames: Record<string, string> = {
+  cheese: "치즈",
+  gray: "회색",
+  tabby: "고등어",
+  white: "흰둥이",
+  golden: "누렁이",
+  jindo: "백구",
+  choco: "초코",
+  schnauzer: "슈나우저",
+  snow: "눈송이",
+  brown: "갈색",
+  ash: "잿빛",
+  beige: "베이지",
+  silver: "실버",
+  sky: "하늘",
+  mint: "민트",
+  lemon: "레몬",
+};
 
 export const petMenuText = {
   ask: "부탁하기",
@@ -954,11 +1031,6 @@ export const devText = {
   ttl: "말풍선 수명",
   ttl30: "기본 (인사 1분, 알림 3분)",
   ttl5: "5초 (빠른 확인)",
-  theme: "화면 모드 (Windows 설정은 바꾸지 않아요)",
-  themeSystem: "Windows 따름",
-  themeLight: "라이트",
-  themeDark: "다크",
-  osNow: (dark: boolean) => `지금 Windows 설정: ${dark ? "다크" : "라이트"}`,
   progress: "펫 성장 (친밀도·레벨)",
   expPlus: (n: number) => `+${n}점`,
   toLevel: (n: number) => `Lv.${n} 만들기`,

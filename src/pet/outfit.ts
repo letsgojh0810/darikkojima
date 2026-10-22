@@ -1,5 +1,5 @@
 /**
- * Clothes: three slots; five items open at each of Lv.1, 5 and 10, and one per secret (pet/titles.ts), shown only once found.
+ * Clothes: three slots (earphones count as head); about five items open at each of Lv.1, 5 and 10, and one per secret (pet/titles.ts).
  * Names live in messages/ko.ts; drawings in anim/Outfit.tsx.
  */
 export type Slot = "head" | "face" | "neck";
@@ -20,9 +20,11 @@ export const ITEMS: Item[] = [
   { id: "glasses", slot: "face", level: 1 },
   { id: "tie", slot: "neck", level: 1 },
   { id: "bandana", slot: "neck", level: 1 },
+  { id: "badge", slot: "neck", level: 1 },
   { id: "cap", slot: "head", level: 5 },
   { id: "headphones", slot: "head", level: 5 },
   { id: "sunglasses", slot: "face", level: 5 },
+  { id: "airpods", slot: "head", level: 5 },
   { id: "scarf", slot: "neck", level: 5 },
   { id: "bow", slot: "neck", level: 5 },
   { id: "crown", slot: "head", level: 10 },
@@ -40,7 +42,7 @@ export const ITEMS: Item[] = [
   { id: "chef", slot: "head", title: "roulette" },
   { id: "nightcap", slot: "head", title: "goodbye20" },
   { id: "locket", slot: "neck", title: "petter" },
-  { id: "badge", slot: "neck", title: "meetings" },
+  { id: "headset", slot: "head", title: "meetings" },
 ];
 
 export const isUnlocked = (it: Item, level: number, titles: string[]) =>
@@ -59,20 +61,23 @@ export function wearable(outfit: Outfit | undefined, level: number, titles: stri
   return out;
 }
 
+type Pt = { x: number; y: number };
+
 /**
- * Where clothes go on each pet, in that pet's SVG coordinates: the top of the head, the eyes (the turtle shows one, from
- * the side), the neck; `size` scales the pieces to the head.
+ * Where clothes go on each pet, in that pet's SVG coordinates: the top of the head, the two eyes, the two sides of the
+ * head where earphones sit, the neck; `size` scales the pieces to the head.
  */
 export interface Anchors {
-  top: { x: number; y: number };
-  eyes: { x: number; y: number }[];
-  neck: { x: number; y: number };
+  top: Pt;
+  eyes: [Pt, Pt];
+  ears: [Pt, Pt];
+  neck: Pt;
   size: number;
 }
 
 export const ANCHORS: Record<string, Anchors> = {
-  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], neck: { x: 60, y: 64 }, size: 1 },
-  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], neck: { x: 60, y: 64 }, size: 1 },
-  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], neck: { x: 60, y: 66 }, size: 0.95 },
-  turtle: { top: { x: 100, y: 51 }, eyes: [{ x: 104, y: 60 }], neck: { x: 100, y: 79 }, size: 0.62 },
+  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], neck: { x: 60, y: 64 }, size: 1 },
+  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], neck: { x: 60, y: 64 }, size: 1 },
+  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], neck: { x: 60, y: 66 }, size: 0.95 },
+  robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], neck: { x: 60, y: 63 }, size: 1.12 },
 };

@@ -10,4 +10,6 @@ export type PetAnimation = FC<{
   muted?: boolean;
   /** what it wears (already filtered to unlocked pieces) */
   outfit?: Outfit;
+  /** coat colour id from the pet's own list (e.g. CAT_COLORS); unknown or missing = its default */
+  color?: string;
 }>;

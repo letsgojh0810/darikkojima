@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { availableMonitors, currentMonitor, getCurrentWindow, PhysicalPosition, primaryMonitor } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
-import { applyTheme, type DebugCmd } from "../../debug";
+import type { DebugCmd } from "../../debug";
+import { applyAppearance } from "../../theme";
 import { createMoments, leaveStatus } from "../../greetings/moments";
 import {
   calendarMessage,
@@ -141,6 +142,7 @@ export function PetApp() {
       setLunchMenus(loaded.lunchMenus);
       setPetProfiles(loaded.petProfiles);
       setPetLabel(loaded.petLabel);
+      applyAppearance(loaded.theme, loaded.accent);
       loadProgress().then((p) => {
         if (cancelled) return;
         progressRef.current = p;
@@ -212,6 +214,7 @@ export function PetApp() {
       setLunchMenus(settings.lunchMenus);
       setPetProfiles(settings.petProfiles);
       setPetLabel(settings.petLabel);
+      applyAppearance(settings.theme, settings.accent);
       s?.refresh();
       cal?.refresh();
       moments?.refresh();
@@ -222,6 +225,7 @@ export function PetApp() {
       setPetScale(payload.petScale);
       setPetProfiles(payload.petProfiles);
       setPetLabel(payload.petLabel);
+      applyAppearance(payload.theme, payload.accent);
     });
     // dev-only: the settings window's "테스트" tab plays behaviours on demand (see src/debug.ts)
     const unlistenDebug = import.meta.env.DEV
@@ -269,9 +273,6 @@ export function PetApp() {
               break;
             case "quip":
               say(oneOf(quipsFor(petIdRef.current, levelRef.current, progressRef.current?.totals)));
-              break;
-            case "theme":
-              applyTheme(c.mode);
               break;
             case "unlockAll": {
               const p = progressRef.current;
@@ -606,7 +607,7 @@ export function PetApp() {
           openMenu();
         }}
       >
-        <Anim key={clickCount} state={state} muted={quiet} outfit={wearable(petProfiles[petId]?.outfit, level, progress?.titles ?? [])} />
+        <Anim key={clickCount} state={state} muted={quiet} outfit={wearable(petProfiles[petId]?.outfit, level, progress?.titles ?? [])} color={petProfiles[petId]?.color} />
       </div>
       {/* keyed by level so the tag pops once when the level goes up */}
       {petLabel !== "off" && progress && (

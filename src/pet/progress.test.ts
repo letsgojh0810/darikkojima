@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ITEMS, unlockedIds, wearable } from "./outfit";
 import { award, emptyProgress, LEVELS, levelOf, normalizeProgress, type Progress, type ProgressEvent } from "./progress";
 import { earnedTitles, newTitles, TITLES } from "./titles";
-import { itemNames, secretMessage } from "../messages/ko";
+import { itemNames, secretHints, secretMessage } from "../messages/ko";
 
 const tue = new Date("2026-10-20T10:00:00");
 const wed = new Date("2026-10-21T10:00:00");
@@ -101,10 +101,11 @@ describe("secrets and clothes", () => {
     expect(newTitles(p)).toEqual([]);
   });
 
-  it("opens five items at Lv.1, 5 and 10, and one per secret", () => {
-    expect(unlockedIds(1, [])).toHaveLength(5);
-    expect(unlockedIds(5, [])).toHaveLength(10);
-    expect(unlockedIds(10, [])).toHaveLength(15);
+  it("opens a handful of items at Lv.1, 5 and 10, and one per secret", () => {
+    expect(unlockedIds(1, [])).toHaveLength(6);
+    expect(unlockedIds(1, [])).toContain("badge");
+    expect(unlockedIds(5, [])).toHaveLength(12);
+    expect(unlockedIds(10, [])).toHaveLength(17);
     expect(unlockedIds(10, TITLES.map((t) => t.id))).toHaveLength(ITEMS.length);
     expect(TITLES.every((t) => ITEMS.filter((it) => it.title === t.id).length === 1)).toBe(true);
     expect(wearable({ head: "crown", neck: "tie", face: "goggles" }, 3, [])).toEqual({ neck: "tie" });
@@ -113,5 +114,6 @@ describe("secrets and clothes", () => {
   it("names every item and gives every secret its own line", () => {
     for (const it of ITEMS) expect(itemNames[it.id]).toBeTruthy();
     for (const t of TITLES) expect(secretMessage(t.id)).not.toBe(secretMessage("nope"));
+    for (const t of TITLES) expect(secretHints[t.id]).toBeTruthy();
   });
 });

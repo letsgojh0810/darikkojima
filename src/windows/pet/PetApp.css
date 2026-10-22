@@ -33,7 +33,7 @@ body,
   animation: tag-pop 0.4s ease-out 1;
 }
 
-.pet-label .lv { color: var(--blue); }
+.pet-label .lv { color: var(--accent); }
 
 @keyframes tag-pop {
   0% { transform: scale(0.8); opacity: 0; }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { PetState } from "./types";
-import "./CssSpriteAnim.css";
+import "./Sprite.css";
 
 /** Shared wrapper: the state class drives the motion (per pet while dragged), the SVG inside only draws the face. */
 export function Sprite({ state, pet, children }: { state: PetState; pet: string; children: ReactNode }) {

@@ -1,5 +1,6 @@
 import { defaultLunchMenus } from "../messages/ko";
 import type { Outfit } from "../pet/outfit";
+import type { ThemeMode } from "../theme";
 
 export type ReminderId = "legs" | "posture" | "water" | "stretch";
 
@@ -29,9 +30,13 @@ export interface Settings {
   /** 0.5 to 1.5, 1 = the drawn size */
   petScale: number;
   /** per pet id; an empty name falls back to the species name */
-  petProfiles: Record<string, { name: string; outfit?: Outfit }>;
+  petProfiles: Record<string, { name: string; outfit?: Outfit; color?: string }>;
   /** what the small tag under the pet shows */
   petLabel: "both" | "name" | "level" | "off";
+  /** light/dark of both windows; "system" follows Windows */
+  theme: ThemeMode;
+  /** accent colour id from src/theme.ts ACCENTS */
+  accent: string;
   reminders: Record<ReminderId, { enabled: boolean; intervalMin: number }>;
   custom: CustomReminder[];
   moments: Moments;
@@ -40,17 +45,35 @@ export interface Settings {
   workHours: { start: string; end: string; days: number[] };
   lunch: { start: string; end: string };
   icsUrls: string[];
+  /** names given to calendars ("내 캘린더", "팀 캘린더"), by URL; a missing one shows the URL's host */
+  icsNames: Record<string, string>;
   calendarLeadMin: number;
 }
 
+/** the turtle became the AI bot (0.2.1): whoever had it picked gets the bot, keeping the name and clothes given to it */
+export function migrateSettings(s: Settings): Settings {
+  const { turtle, ...profiles } = s.petProfiles;
+  if (s.pet !== "turtle" && !turtle) return s;
+  if (turtle && !profiles.robot) profiles.robot = { name: turtle.name, outfit: turtle.outfit };
+  return { ...s, pet: s.pet === "turtle" ? "robot" : s.pet, petProfiles: profiles };
+}
+
+/** changes part of one pet's profile and keeps the rest (renaming must not undress it) */
+export const withProfile = (s: Settings, pet: string, patch: Partial<Settings["petProfiles"][string]>): Settings => ({
+  ...s,
+  petProfiles: { ...s.petProfiles, [pet]: { ...s.petProfiles[pet], name: s.petProfiles[pet]?.name ?? "", ...patch } },
+});
+
 /** what the settings window sends to the pet window while the pet tab is being edited, before 저장 */
-export type PetPreview = Pick<Settings, "pet" | "petScale" | "petProfiles" | "petLabel">;
+export type PetPreview = Pick<Settings, "pet" | "petScale" | "petProfiles" | "petLabel" | "theme" | "accent">;
 
 export const defaultSettings: Settings = {
   pet: "cat",
   petScale: 1,
   petProfiles: {},
   petLabel: "both",
+  theme: "system",
+  accent: "coral",
   reminders: {
     legs: { enabled: true, intervalMin: 30 },
     posture: { enabled: true, intervalMin: 45 },
@@ -63,5 +86,6 @@ export const defaultSettings: Settings = {
   workHours: { start: "09:00", end: "18:00", days: [1, 2, 3, 4, 5] },
   lunch: { start: "12:00", end: "13:00" },
   icsUrls: [],
+  icsNames: {},
   calendarLeadMin: 10,
 };

@@ -13,6 +13,7 @@ pub fn open_settings(app: &tauri::AppHandle) {
     std::thread::spawn(move || {
         let _ = WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings.html".into()))
             .title("다리꼬지마 설정")
+            // measured: the tallest tabs are pet with its square cards (~514) and calendar with two calendars (508)
             .inner_size(960.0, 520.0)
             .build();
     });

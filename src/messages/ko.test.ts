@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { petIds } from "../pet/anim/pets";
+import { petColors, petIds } from "../pet/anim/pets";
 import {
   calendarMessage,
+  colorNames,
   defaultLunchMenus,
   greetingMessage,
   leaveMessage,
@@ -150,6 +151,13 @@ describe("click quips", () => {
   it("shared lines never name a species", () => {
     // an unknown pet id gets the shared lines only
     expect(quipsFor("none").filter((q) => /거북|토끼|고양이|강아지|멍|야옹|등껍질/.test(q))).toEqual([]);
+  });
+
+  it("every pet has at least four named coat colours", () => {
+    for (const id of petIds) {
+      expect(petColors[id].length).toBeGreaterThanOrEqual(4);
+      for (const c of petColors[id]) expect(colorNames[c.id]).toBeTruthy();
+    }
   });
 
   it("every selectable pet has lines of its own", () => {

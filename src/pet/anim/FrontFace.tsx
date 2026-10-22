@@ -20,6 +20,15 @@ export function MuteMask({ x, y, size = 1 }: { x: number; y: number; size?: numb
   );
 }
 
+/** Outline width and colour: a coat colour pulled 45% toward a warm dark brown, so every coat gets a matching edge. */
+export const LINE_W = 1.6;
+export function outline(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c: number, to: number) => Math.round(c + (to - c) * 0.45);
+  const rgb = (mix(n >> 16, 0x3b) << 16) | (mix((n >> 8) & 255, 0x2b) << 8) | mix(n & 255, 0x20);
+  return `#${rgb.toString(16).padStart(6, "0")}`;
+}
+
 /** How far the head sinks (sleep) or lifts (click). */
 export const headDy = (s: PetState) => (s === "sleep" ? 3 : s === "click" ? -3 : 0);
 
