@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -34,7 +34,7 @@ const ids = Object.keys(reminderLabels) as ReminderId[];
 const REPO = "https://github.com/letsgojh0810/darikkojima";
 /** Monday first; the stored values stay Date#getDay (0 = Sunday). */
 const dayOrder = [1, 2, 3, 4, 5, 6, 0];
-/** Add a tab here and a matching `tab === id` block below; the footer's 저장/취소 covers remind and talk, the other tabs save live. */
+/** Add a tab here and a matching `tab === id` block below; every tab saves as it changes, the footer only closes. */
 const tabs = [
   { id: "remind", label: t.tabRemind },
   { id: "calendar", label: t.tabCalendar },
@@ -110,9 +110,8 @@ function TimeRange({ start, end, onChange }: { start: string; end: string; onCha
 }
 
 export function SettingsApp() {
-  // edits stay in this draft until 저장; closing the window or 취소 throws them away (pet and grow tabs excepted, see below)
+  // every change is stored as it is made (see update below)
   const [s, setS] = useState<Settings>();
-  const [saved, setSaved] = useState<{ s: Settings }>();
   const [auto, setAuto] = useState(false);
   const [url, setUrl] = useState("");
   const [newCalName, setNewCalName] = useState("");
@@ -167,12 +166,10 @@ export function SettingsApp() {
     Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
       setS(loaded);
       setAuto(on);
-      setSaved({ s: loaded });
     });
   }, []);
 
-  // the general, pet and grow tabs have no 저장: what is picked there shows at once (on the pet too) and is stored,
-  // leaving the other tabs' unsaved edits alone
+  // what the pet shows changes on the pet at once, before the store round trip
   const preview: PetPreview | undefined = s && {
     pet: s.pet,
     petScale: s.petScale,
@@ -183,17 +180,14 @@ export function SettingsApp() {
   };
   const previewKey = JSON.stringify(preview ?? null);
   useEffect(() => {
-    if (!preview || !saved) return;
+    if (!preview) return;
     applyAppearance(preview.theme, preview.accent);
     emit("pet-preview", preview);
-    const next = { ...saved.s, ...preview };
-    if (JSON.stringify(next) === JSON.stringify(saved.s)) return;
-    saveSettings(next);
-    setSaved({ ...saved, s: next });
     // previewKey stands for the preview's content, which is what should trigger a resend
-  }, [previewKey, !!saved]);
-  if (!s || !saved) return null;
-  const live = tab === "general" || tab === "calendar" || tab === "pet" || tab === "grow";
+  }, [previewKey]);
+  // the pet window reloads everything (and refetches calendars) on settings-changed, so a slider drag tells it once
+  const notifyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  if (!s) return null;
   const calName = (u: string) => s.icsNames[u]?.trim() || new URL(u).host;
   const upcoming = s.icsUrls
     .flatMap((u) => {
@@ -202,19 +196,18 @@ export function SettingsApp() {
     })
     .sort((a, b) => a.e.start.getTime() - b.e.start.getTime());
 
-  const update = setS;
   /**
-   * Applies a change and stores it at once, leaving other tabs' unsaved edits alone (the calendar tab works this way: a
-   * calendar added there and then left behind on another tab used to be lost). `notify` makes the pet window reload.
+   * Every change is stored at once; there is no 저장 button, only 닫기 (a half-saved window used to lose a calendar added
+   * on one tab and left behind on another). The pet window is told once things settle.
    */
-  const commitNow = (patch: Partial<Settings>, notify = true) => {
-    update({ ...s, ...patch });
-    const next = { ...saved.s, ...patch };
-    setSaved({ s: next });
+  const update = (next: Settings) => {
+    setS(next);
     saveSettings(next).then(() => {
-      if (notify) emit("settings-changed");
+      clearTimeout(notifyTimer.current);
+      notifyTimer.current = setTimeout(() => emit("settings-changed"), 400);
     });
   };
+  const commitNow = (patch: Partial<Settings>) => update({ ...s, ...patch });
   /**
    * 모두 초기화: settings back to the defaults, and the pet window clears what it owns (closeness, position, quiet mode,
    * the little things remembered in localStorage). Autostart is a Windows setting and stays as it is.
@@ -222,8 +215,7 @@ export function SettingsApp() {
   const resetAll = async () => {
     const fresh = { ...defaultSettings };
     await saveSettings(fresh);
-    update(fresh);
-    setSaved({ s: fresh });
+    setS(fresh);
     setProgress(emptyProgress(new Date()));
     setChecks({});
     setConfirmAll(false);
@@ -238,7 +230,6 @@ export function SettingsApp() {
     await (on ? enable() : disable());
     setAuto(on);
   };
-  const dirty = JSON.stringify(s) !== JSON.stringify(saved.s) || !!url.trim() || !!newText.trim() || !!newMenu.trim();
 
   const withMenu = (list: string[]) => {
     const m = newMenu.trim();
@@ -269,13 +260,6 @@ export function SettingsApp() {
           icsNames: newCalName.trim() ? { ...s.icsNames, [u]: newCalName.trim() } : s.icsNames,
         };
 
-  const save = async () => {
-    // text typed but not yet added would be lost silently, so take it along
-    const next = { ...s, custom: newCustom(), lunchMenus: withMenu(s.lunchMenus), ...withCalendar(normalizeIcsUrl(url)) };
-    await saveSettings(next);
-    await emit("settings-changed");
-    await getCurrentWindow().close();
-  };
   const setReminder = (id: ReminderId, patch: Partial<Settings["reminders"][ReminderId]>) =>
     update({ ...s, reminders: { ...s.reminders, [id]: { ...s.reminders[id], ...patch } } });
 
@@ -478,8 +462,7 @@ export function SettingsApp() {
                       maxLength={20}
                       placeholder={t.calNamePlaceholder}
                       aria-label={t.calNamePlaceholder}
-                      // a name is only shown here, so the pet window need not reload on every key
-                      onChange={(e) => commitNow({ icsNames: { ...s.icsNames, [u]: e.target.value } }, false)}
+                      onChange={(e) => commitNow({ icsNames: { ...s.icsNames, [u]: e.target.value } })}
                       onKeyDown={(e) => e.key === "Enter" && setEditingCal(null)}
                     />
                   </div>
@@ -599,6 +582,7 @@ export function SettingsApp() {
                   <li key={x}>{x}</li>
                 ))}
               </ol>
+              <p>{t.guideMany}</p>
               <p>{t.guideNote}</p>
             </div>
           </details>
@@ -847,16 +831,10 @@ export function SettingsApp() {
       )}
 
       <footer>
-        {/* a live tab hides 저장, unless another tab still has edits that closing would throw away */}
-        {live && <span className="desc">{dirty ? t.otherUnsaved : t.liveSaved}</span>}
+        <span className="desc">{t.liveSaved}</span>
         <button className="secondary" onClick={() => getCurrentWindow().close()}>
           {t.cancel}
         </button>
-        {(!live || dirty) && (
-          <button className="primary" disabled={!dirty} onClick={save}>
-            {t.save}
-          </button>
-        )}
       </footer>
       </div>
     </main>

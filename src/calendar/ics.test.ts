@@ -23,6 +23,18 @@ const from = new Date("2026-10-19T00:00:00Z");
 const to = new Date("2026-10-26T00:00:00Z");
 
 describe("parseEvents", () => {
+  it("skips Outlook's free and working-elsewhere blocks but keeps busy and tentative ones", () => {
+    const at = (h: number) => [`DTSTART:20261020T0${h}0000Z`, `DTEND:20261020T0${h}3000Z`];
+    const ics = wrap(
+      vevent("UID:free", "SUMMARY:약속 없음", "X-MICROSOFT-CDO-BUSYSTATUS:FREE", ...at(1)),
+      vevent("UID:away", "SUMMARY:다른 위치에서 근무 중", ...at(2)),
+      vevent("UID:transp", "SUMMARY:점심", "TRANSP:TRANSPARENT", ...at(3)),
+      vevent("UID:busy", "SUMMARY:바쁨", "X-MICROSOFT-CDO-BUSYSTATUS:BUSY", ...at(4)),
+      vevent("UID:tent", "SUMMARY:임시", "X-MICROSOFT-CDO-BUSYSTATUS:TENTATIVE", ...at(5)),
+    );
+    expect(parseEvents(ics, from, to).map((e) => e.uid)).toEqual(["busy", "tent"]);
+  });
+
   it("reads a single UTC event", () => {
     const ics = wrap(vevent("UID:a", "SUMMARY:주간회의", "DTSTART:20261020T010000Z", "DTEND:20261020T020000Z"));
     const [e] = parseEvents(ics, from, to);

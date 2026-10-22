@@ -10,7 +10,18 @@ const MAX_STEPS = 20_000;
  */
 export const isIcs = (text: string) => /^﻿?\s*BEGIN:VCALENDAR/i.test(text);
 
-/** Timed events overlapping [from, to], recurrences expanded. All-day and cancelled events are skipped. */
+/**
+ * Outlook marks blocks that are not real commitments as free / working elsewhere; with an availability-only feed the
+ * status is also all the title says. Such blocks are no event to be told about.
+ */
+const NOT_BUSY = new Set(["FREE", "WORKINGELSEWHERE"]);
+const NOT_BUSY_TITLES = new Set(["약속 없음", "다른 위치에서 근무 중", "free", "working elsewhere"]);
+const notBusy = (v: ICAL.Component) =>
+  v.getFirstPropertyValue("transp") === "TRANSPARENT" ||
+  NOT_BUSY.has(String(v.getFirstPropertyValue("x-microsoft-cdo-busystatus") ?? "").toUpperCase()) ||
+  NOT_BUSY_TITLES.has(String(v.getFirstPropertyValue("summary") ?? "").trim().toLowerCase());
+
+/** Timed events overlapping [from, to], recurrences expanded. All-day, cancelled and free (Outlook) events are skipped. */
 export function parseEvents(ics: string, from: Date, to: Date): CalEvent[] {
   const root = new ICAL.Component(ICAL.parse(ics));
   for (const tz of root.getAllSubcomponents("vtimezone")) ICAL.TimezoneService.register(tz);
@@ -18,7 +29,7 @@ export function parseEvents(ics: string, from: Date, to: Date): CalEvent[] {
   const masters = new Map<string, ICAL.Event>();
   const exceptions: ICAL.Event[] = [];
   for (const v of root.getAllSubcomponents("vevent")) {
-    if (v.getFirstPropertyValue("status") === "CANCELLED") continue;
+    if (v.getFirstPropertyValue("status") === "CANCELLED" || notBusy(v)) continue;
     const e = new ICAL.Event(v);
     if (e.startDate.isDate) continue;
     if (e.isRecurrenceException()) exceptions.push(e);
