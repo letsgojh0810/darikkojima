@@ -13,6 +13,14 @@ export type DebugCmd =
   | { type: "clear" }
   | { type: "ttl"; ms: number | null }
   | { type: "state"; state: PetState | null }
-  | { type: "quip" };
+  | { type: "quip" }
+  /** null = follow Windows again */
+  | { type: "theme"; mode: "light" | "dark" | null };
+
+/** Forces (or releases) light/dark in the current window; the settings tab also sends it to the pet window. */
+export function applyTheme(mode: "light" | "dark" | null) {
+  if (mode) document.documentElement.dataset.theme = mode;
+  else delete document.documentElement.dataset.theme;
+}
 
 export const sendDebug = (cmd: DebugCmd) => emit("debug", cmd);

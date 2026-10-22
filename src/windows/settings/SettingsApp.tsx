@@ -16,9 +16,10 @@ const ids = Object.keys(reminderLabels) as ReminderId[];
 const dayOrder = [1, 2, 3, 4, 5, 6, 0];
 /** Add a tab here and a matching `tab === id` block below; the footer's 저장/취소 covers every tab. */
 const tabs = [
-  { id: "general", label: t.tabGeneral },
-  { id: "pet", label: t.tabPet },
+  { id: "remind", label: t.tabRemind },
+  { id: "calendar", label: t.tabCalendar },
   { id: "talk", label: t.tabTalk },
+  { id: "pet", label: t.tabPet },
   { id: "dev", label: devText.tab },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
@@ -95,7 +96,7 @@ export function SettingsApp() {
   const [badUrl, setBadUrl] = useState<string>();
   const [newText, setNewText] = useState("");
   const [newMenu, setNewMenu] = useState("");
-  const [tab, setTab] = useState<TabId>("general");
+  const [tab, setTab] = useState<TabId>("remind");
 
   // closing without saving (X or 취소) tells the pet window to drop the preview and reload what is stored
   useEffect(() => {
@@ -171,19 +172,20 @@ export function SettingsApp() {
 
   return (
     <main className="settings">
-      <header>
+      <aside className="side">
         <h1>{t.title}</h1>
-      </header>
+        <nav className="tabs" role="tablist" aria-orientation="vertical">
+          {visibleTabs.map((x) => (
+            <button key={x.id} role="tab" aria-selected={tab === x.id} className="tab" onClick={() => setTab(x.id)}>
+              {x.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      <nav className="tabs" role="tablist">
-        {visibleTabs.map((x) => (
-          <button key={x.id} role="tab" aria-selected={tab === x.id} className="tab" onClick={() => setTab(x.id)}>
-            {x.label}
-          </button>
-        ))}
-      </nav>
+      <div className="content">
 
-      {tab === "general" && (
+      {tab === "remind" && (
       <div className="cols">
         <div className="col">
           <Group title={t.reminders}>
@@ -222,12 +224,6 @@ export function SettingsApp() {
               </button>
             </div>
           </Group>
-
-          <Group title={t.system}>
-            <Row label={t.autostart}>
-              <Switch checked={auto} label={t.autostart} onChange={setAuto} />
-            </Row>
-          </Group>
         </div>
 
         <div className="col">
@@ -250,24 +246,20 @@ export function SettingsApp() {
             </Row>
           </Group>
 
+          <Group title={t.system}>
+            <Row label={t.autostart}>
+              <Switch checked={auto} label={t.autostart} onChange={setAuto} />
+            </Row>
+          </Group>
+        </div>
+      </div>
+      )}
+
+      {tab === "calendar" && (
+      <div className="cols">
+        <div className="col">
           <Group title={t.calendar}>
             <Row desc={t.calendarHint} />
-            <details className="guide">
-              <summary>{t.guideTitle}</summary>
-              <h3>{t.guideGoogle}</h3>
-              <ol>
-                {t.guideGoogleSteps.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ol>
-              <h3>{t.guideOutlook}</h3>
-              <ol>
-                {t.guideOutlookSteps.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ol>
-              <p>{t.guideNote}</p>
-            </details>
             {s.icsUrls.map((u) => (
               // private ICS links are secret tokens: show only the host, the full URL stays in the tooltip
               <Row key={u} label={`${new URL(u).host} …`}>
@@ -289,12 +281,35 @@ export function SettingsApp() {
               </button>
             </div>
             {badUrl && <p className="err">{badUrl}</p>}
+          </Group>
+
+          <Group title={t.leadGroup}>
             <Row label={t.lead}>
               <span className="unit">
                 <NumberField value={s.calendarLeadMin} min={1} max={120} onCommit={(n) => update({ ...s, calendarLeadMin: n })} />
                 {t.leadUnit}
               </span>
             </Row>
+          </Group>
+        </div>
+
+        <div className="col">
+          <Group title={t.guideTitle}>
+            <div className="guide">
+              <h3>{t.guideGoogle}</h3>
+              <ol>
+                {t.guideGoogleSteps.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ol>
+              <h3>{t.guideOutlook}</h3>
+              <ol>
+                {t.guideOutlookSteps.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ol>
+              <p>{t.guideNote}</p>
+            </div>
           </Group>
         </div>
       </div>
@@ -391,6 +406,7 @@ export function SettingsApp() {
           {t.save}
         </button>
       </footer>
+      </div>
     </main>
   );
 }

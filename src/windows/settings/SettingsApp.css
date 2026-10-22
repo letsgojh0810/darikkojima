@@ -6,20 +6,32 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* slim, rounded scrollbars in the same neutral tones as the rest (follows light/dark through the tokens) */
+*::-webkit-scrollbar { width: 12px; height: 12px; }
+*::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: var(--r-pill); background: var(--disabled); background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--text-3); background-clip: padding-box; }
+/* keep the 12px reserved so the columns do not jump sideways when a scrollbar appears */
+html { scrollbar-gutter: stable; }
+
 /* two columns so everything is visible at once; compact controls leave breathing room around them */
-.settings { display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh; padding: 28px 32px 24px; }
-h1 { margin: 0 4px 4px; font-size: 20px; line-height: 28px; font-weight: 700; }
-.tabs { display: flex; gap: 20px; margin: 4px 4px 0; border-bottom: 1px solid var(--line); }
-.tab { height: 40px; padding: 0 2px; margin-bottom: -1px; border-bottom: 2px solid transparent; background: none; color: var(--text-3); font-weight: 600; }
-.tab:hover { color: var(--text-2); }
-.tab[aria-selected="true"] { border-bottom-color: var(--blue); color: var(--text-1); }
+/* tabs run down the left, so the window can be short and more tabs fit later */
+.settings { display: grid; grid-template-columns: 168px minmax(0, 1fr); box-sizing: border-box; min-height: 100vh; }
+/* the menu is a panel of its own (white on the grey page, dark surface in dark mode) so the two areas read as two */
+.side { position: sticky; top: 0; align-self: start; box-sizing: border-box; height: 100vh; padding: 28px 12px 24px 12px; border-right: 1px solid var(--line); background: var(--surface); }
+.content { display: flex; flex-direction: column; box-sizing: border-box; min-width: 0; padding: 28px 20px 24px 28px; }
+/* the first card of every tab starts level with the menu title */
+.cols > .col > section:first-child, .pet-tab > h2:first-child { margin-top: 0; }
+h1 { margin: 0 12px 16px; font-size: 20px; line-height: 28px; font-weight: 700; }
+.tabs { display: flex; flex-direction: column; gap: 2px; }
+.tab { display: block; width: 100%; height: 40px; padding: 0 12px; border-radius: var(--r-sm); background: none; color: var(--text-2); font-weight: 600; text-align: left; }
+.tab:hover { background: var(--hover); }
+.tab[aria-selected="true"] { background: var(--blue-weak); color: var(--blue); font-weight: 700; }
 .tab:active { transform: none; }
 
-/* "where do I find the address": folded by default so the card stays short */
-.guide { padding: 2px 14px 8px; color: var(--text-2); font: 400 13px/19px var(--font); }
-.guide summary { width: fit-content; color: var(--blue); font-weight: 600; cursor: pointer; }
-.guide summary:focus-visible { outline: 0; box-shadow: var(--focus-ring); border-radius: var(--r-xs); }
-.guide h3 { margin: 10px 0 2px; color: var(--text-1); font: 600 13px/19px var(--font); }
+/* "where do I find the address": its own card beside the address list, so it needs no folding */
+.guide { padding: 4px 14px 12px; color: var(--text-2); font: 400 13px/19px var(--font); }
+.guide h3 { margin: 8px 0 2px; color: var(--text-1); font: 600 13px/19px var(--font); }
 .guide ol { margin: 0; padding-left: 20px; }
 .guide p { margin: 8px 0 0; color: var(--text-3); }
 
@@ -35,6 +47,7 @@ h1 { margin: 0 4px 4px; font-size: 20px; line-height: 28px; font-weight: 700; }
 
 .pet-tab { flex: 1; }
 .pet-tab h2 { margin-top: 20px; }
+.pet-tab .group { max-width: 460px; }
 .pets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .pet-card {
   display: flex;

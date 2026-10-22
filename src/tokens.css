@@ -1,4 +1,7 @@
-/* TDS-style tokens shared by the pet and settings windows. Dark values marked (추정) in the design spec are unverified against TDS. */
+/*
+ * TDS-style tokens shared by the pet and settings windows. Dark values marked (추정) in the design spec are unverified against TDS.
+ * Dark follows Windows (prefers-color-scheme); the dev-only test tab can force a mode with <html data-theme="light|dark">.
+ */
 :root {
   color-scheme: light dark;
 
@@ -32,8 +35,13 @@
   --focus-ring: 0 0 0 3px rgba(49, 130, 246, 0.35);
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* the dark values are written twice (system dark, and forced dark): CSS cannot share one block between a media query and a selector */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #101013;
     --surface: #1c1c22;
     --surface-sub: #26262e;
@@ -52,4 +60,25 @@
     --toast-bg: #f2f4f6;
     --toast-text: #191f28;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101013;
+  --surface: #1c1c22;
+  --surface-sub: #26262e;
+  --text-1: #f2f4f6;
+  --text-2: #b0b8c1;
+  --line: #2e2e38;
+  --blue: #4593fc;
+  --blue-press: #3182f6;
+  --blue-weak: #1b2b44;
+  --red: #f25c67;
+  --red-weak: #3a1d22;
+  --disabled: #4e5968;
+  --hover: rgba(255, 255, 255, 0.06);
+  --press: rgba(255, 255, 255, 0.1);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --toast-bg: #f2f4f6;
+  --toast-text: #191f28;
 }

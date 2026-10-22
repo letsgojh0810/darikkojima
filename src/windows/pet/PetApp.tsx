@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
-import type { DebugCmd } from "../../debug";
+import { applyTheme, type DebugCmd } from "../../debug";
 import { createMoments } from "../../greetings/moments";
 import {
   calendarMessage,
@@ -170,6 +170,9 @@ export function PetApp() {
               break;
             case "quip":
               say(oneOf(quipsFor(petIdRef.current)));
+              break;
+            case "theme":
+              applyTheme(c.mode);
               break;
           }
         })
