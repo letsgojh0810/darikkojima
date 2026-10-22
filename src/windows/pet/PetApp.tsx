@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, getCurrentWindow, PhysicalPosition, primaryMonitor } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
 import { applyTheme, type DebugCmd } from "../../debug";
 import { createMoments, leaveStatus } from "../../greetings/moments";
@@ -21,6 +21,7 @@ import {
 import { isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
 import { pets } from "../../pet/anim/pets";
 import type { PetState } from "../../pet/anim/types";
+import { bringOnScreen, FORCE_WINDOW_MS, TOO_HIDDEN, visibleFraction, type Rect } from "../../pet/edges";
 import { LunchBubble } from "../../pet/LunchBubble";
 import { NoticeBubble } from "../../pet/NoticeBubble";
 import { addNotice, lunchTtl, nextExpiry, pruneNotices, setTtlOverride, type Notice } from "../../pet/notices";
@@ -74,8 +75,10 @@ export function PetApp() {
   const quipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [dragging, setDragging] = useState(false);
+  const [edgeWorry, setEdgeWorry] = useState(false);
+  const petRef = useRef<HTMLDivElement>(null);
   const [forced, setForced] = useState<PetState | null>(null); // dev-only: pins an animation so it can be looked at
-  const state: PetState = forced ?? (dragging ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
+  const state: PetState = forced ?? (dragging ? (edgeWorry ? "nag" : "drag") : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
   const [petId, setPetId] = useState(defaultSettings.pet);
   const petIdRef = useRef(petId);
   petIdRef.current = petId;
@@ -281,33 +284,130 @@ export function PetApp() {
     return () => clearTimeout(t);
   }, [notices, lunch]);
 
-  // click-through hit area follows the bubble + pet
+  // click-through hit area: the bubble + pet, widened to take in a menu flyout that sticks out beside them
   useEffect(() => {
     const el = stage.current!;
-    const ro = new ResizeObserver(() => setHitRect(el.getBoundingClientRect()));
+    const update = () => {
+      const rects = [el, ...el.querySelectorAll(".flyout")].map((e) => e.getBoundingClientRect());
+      const left = Math.min(...rects.map((r) => r.left));
+      const top = Math.min(...rects.map((r) => r.top));
+      setHitRect(new DOMRect(left, top, Math.max(...rects.map((r) => r.right)) - left, Math.max(...rects.map((r) => r.bottom)) - top));
+    };
+    const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    const mo = new MutationObserver(update); // a flyout opening does not resize the stage
+    mo.observe(el, { childList: true, subtree: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
   }, []);
 
-  // restore and persist position
+  // "펫 위치 초기화" (tray / settings): back to the bottom right of the main monitor, just above the taskbar; onMoved saves it
+  const resetPosition = async () => {
+    const win = getCurrentWindow();
+    const mon = (await primaryMonitor()) ?? (await currentMonitor());
+    if (!mon) return;
+    const s = mon.scaleFactor;
+    const size = await win.outerSize();
+    const { position: wp, size: ws } = mon.workArea; // the screen minus the taskbar, wherever the taskbar is
+    const petCenterX = wp.x + ws.width - 140 * s;
+    const petBottom = wp.y + ws.height - 16 * s;
+    // the pet sits at the bottom centre of its (wider, transparent) window, 24px above the window edge
+    await win.setPosition(new PhysicalPosition(Math.round(petCenterX - size.width / 2), Math.round(petBottom - size.height + 24 * s)));
+    say(oneOf(petQuips.found));
+  };
+  const resetRef = useRef(resetPosition);
+  resetRef.current = resetPosition;
+  useEffect(() => {
+    const unlisten = listen("reset-position", () => resetRef.current());
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
+
+  // a menu group opens toward the middle of the screen the pet is on, so it is never cut off at the edge
+  const [menuSide, setMenuSide] = useState<"left" | "right">("right");
+  const openMenu = async () => {
+    setMenu(true);
+    const win = getCurrentWindow();
+    const [pos, size, mon] = await Promise.all([win.outerPosition(), win.outerSize(), currentMonitor()]);
+    if (mon) setMenuSide(pos.x + size.width / 2 > mon.position.x + mon.size.width / 2 ? "left" : "right");
+  };
+
+  // restore and persist position; keep the pet from being dropped (mostly) off every screen
   useEffect(() => {
     const win = getCurrentWindow();
     let saveTimer: ReturnType<typeof setTimeout>;
     let dragTimer: ReturnType<typeof setTimeout>;
     let ignoreUntil = Infinity; // the move that restores the saved position is not a drag
-    // shortcut: no on-screen check, a saved position on a removed monitor strands the pet; add with the tray "show" reset
+    let moving = false;
+    let lastPush = 0;
+    let at = { x: 0, y: 0 };
+    let screens: Rect[] = [];
+    const loadScreens = async () => {
+      screens = (await availableMonitors()).map((m) => ({
+        x: m.workArea.position.x,
+        y: m.workArea.position.y,
+        w: m.workArea.size.width,
+        h: m.workArea.size.height,
+      }));
+    };
+    // the pet's body (not the bubble or the label) in screen pixels, for a window whose top-left is (x, y)
+    const petRectAt = (x: number, y: number): Rect => {
+      const r = petRef.current!.getBoundingClientRect();
+      const dpr = window.devicePixelRatio;
+      return { x: x + r.left * dpr, y: y + r.top * dpr, w: r.width * dpr, h: r.height * dpr };
+    };
+    const tooHidden = () => screens.length > 0 && visibleFraction(petRectAt(at.x, at.y), screens) < TOO_HIDDEN;
+
+    const slideBy = async (dx: number, dy: number) => {
+      const from = at;
+      ignoreUntil = Date.now() + 1000; // a slide is not a drag
+      for (let i = 1; i <= 12; i++) {
+        const e = 1 - (1 - i / 12) ** 3; // ease out
+        await win.setPosition(new PhysicalPosition(Math.round(from.x + dx * e), Math.round(from.y + dy * e)));
+        await new Promise((done) => setTimeout(done, 16));
+      }
+    };
+
+    // dropped too far into a corner: slide back and complain; dropped there again soon after: give in
+    const onDrop = () => {
+      if (!tooHidden()) return;
+      if (Date.now() - lastPush < FORCE_WINDOW_MS) {
+        lastPush = 0;
+        say(oneOf(petQuips.edgeGiveUp));
+        return;
+      }
+      lastPush = Date.now();
+      const pet = petRectAt(at.x, at.y);
+      const to = bringOnScreen(pet, screens, 8 * window.devicePixelRatio);
+      say(oneOf(petQuips.edgeNo));
+      slideBy(to.x - pet.x, to.y - pet.y);
+    };
+
+    loadScreens();
     loadPetPos().then(async (p) => {
       if (p) await win.setPosition(new PhysicalPosition(p.x, p.y));
       ignoreUntil = Date.now() + 500;
     });
     const unlisten = win.onMoved(({ payload }) => {
+      at = { x: payload.x, y: payload.y };
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => savePetPos({ x: payload.x, y: payload.y }), 500);
+      saveTimer = setTimeout(() => savePetPos(at), 500);
       // there is no mouse-up after startDragging, so "the window stopped moving" ends the drag
       if (Date.now() < ignoreUntil) return;
+      if (!moving) loadScreens(); // monitors may have been plugged in or out since the last drag
+      moving = true;
       setDragging(true);
+      setEdgeWorry(tooHidden()); // the pet looks uneasy while it is being pushed into the corner
       clearTimeout(dragTimer);
-      dragTimer = setTimeout(() => setDragging(false), 250);
+      dragTimer = setTimeout(() => {
+        moving = false;
+        setDragging(false);
+        setEdgeWorry(false);
+        onDrop();
+      }, 250);
     });
     return () => {
       clearTimeout(saveTimer);
@@ -399,26 +499,32 @@ export function PetApp() {
       {!lunch && notices.length === 0 && quip && <div className="toast">{quip}</div>}
       {menu && (
         <PetMenu
+          side={menuSide}
           onClose={() => setMenu(false)}
           items={[
-            // asking the pet
-            { label: petMenuText.lunch, onSelect: showLunch },
+            // asking the pet: one level down, so the menu stays short as more requests are added
             {
-              label: petMenuText.leave,
-              onSelect: () => {
-                if (settingsRef.current) {
-                  addNote({ key: "h:ask-leave", kind: "hello", message: leaveMessage(leaveStatus(new Date(), settingsRef.current)) });
-                }
-              },
-            },
-            {
-              label: petMenuText.schedule,
-              onSelect: () =>
-                addNote({
-                  key: "h:ask-schedule",
-                  kind: "hello",
-                  message: scheduleMessage(calRef.current?.eventsLeftToday() ?? [], (settingsRef.current?.icsUrls.length ?? 0) > 0),
-                }),
+              label: petMenuText.ask,
+              children: [
+                { label: petMenuText.lunch, onSelect: showLunch },
+                {
+                  label: petMenuText.leave,
+                  onSelect: () => {
+                    if (settingsRef.current) {
+                      addNote({ key: "h:ask-leave", kind: "hello", message: leaveMessage(leaveStatus(new Date(), settingsRef.current)) });
+                    }
+                  },
+                },
+                {
+                  label: petMenuText.schedule,
+                  onSelect: () =>
+                    addNote({
+                      key: "h:ask-schedule",
+                      kind: "hello",
+                      message: scheduleMessage(calRef.current?.eventsLeftToday() ?? [], (settingsRef.current?.icsUrls.length ?? 0) > 0),
+                    }),
+                },
+              ],
             },
             // the app itself
             { label: quiet ? petMenuText.quietOff : petMenuText.quietOn, divider: true, onSelect: () => setQuiet(!quiet) },
@@ -429,6 +535,7 @@ export function PetApp() {
       )}
       {/* zoom (unlike transform) changes layout size, so the click-through hit rect follows it */}
       <div
+        ref={petRef}
         style={{ zoom: petScale }}
         onMouseEnter={() => {
           setHover(true);
@@ -455,7 +562,7 @@ export function PetApp() {
         }}
         onContextMenu={(e) => {
           e.preventDefault();
-          setMenu(true);
+          openMenu();
         }}
       >
         <Anim key={clickCount} state={state} muted={quiet} />

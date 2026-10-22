@@ -20,10 +20,11 @@ pub fn open_settings(app: &tauri::AppHandle) {
 
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let toggle = MenuItemBuilder::with_id("toggle", "펫 숨기기").build(app)?;
+    let reset = MenuItemBuilder::with_id("reset", "펫 위치 초기화").build(app)?;
     let quiet = MenuItemBuilder::with_id("quiet", "조용히 하기").build(app)?;
     let settings = MenuItemBuilder::with_id("settings", "설정").build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "종료").build(app)?;
-    let menu = MenuBuilder::new(app).items(&[&toggle, &quiet, &settings, &quit]).build()?;
+    let menu = MenuBuilder::new(app).items(&[&toggle, &reset, &quiet, &settings, &quit]).build()?;
 
     // the pet window owns the quiet switch (it remembers it across restarts) and reports every change here
     let quiet_label = quiet.clone();
@@ -46,6 +47,14 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
                     let _ = win.show();
                     let _ = toggle.set_text("펫 숨기기");
                 }
+            }
+            // the way back for a pet dragged into a corner or off-screen: the tray is reachable even when the pet is not
+            "reset" => {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.show();
+                    let _ = toggle.set_text("펫 숨기기");
+                }
+                let _ = app.emit("reset-position", ());
             }
             "quiet" => {
                 let _ = app.emit("quiet-toggle", ());

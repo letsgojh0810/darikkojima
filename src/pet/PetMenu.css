@@ -26,7 +26,21 @@
   cursor: pointer;
 }
 
-.pet-menu button:hover { background: var(--hover); }
+.pet-menu button { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pet-menu .chev { color: var(--text-3); font-size: 18px; }
+/* opening to the left: the arrow sits on the side it points to */
+.pet-menu .has-sub.left { flex-direction: row-reverse; justify-content: flex-end; }
+.pet-menu button:hover, .pet-menu button[aria-expanded="true"] { background: var(--hover); }
+
+/* a group's items, beside the row that opened them */
+.pet-menu li { position: relative; }
+.pet-menu .flyout { position: absolute; top: -6px; margin: 0; z-index: 1; }
+.pet-menu .flyout.right { left: calc(100% + 10px); }
+.pet-menu .flyout.left { right: calc(100% + 10px); }
+/* an invisible strip over the gap: crossing it still counts as being inside the menu, so the menu does not close */
+.pet-menu .flyout::before { content: ""; position: absolute; top: 0; bottom: 0; width: 16px; }
+.pet-menu .flyout.right::before { left: -16px; }
+.pet-menu .flyout.left::before { right: -16px; }
 .pet-menu button:active { background: var(--press); }
 .pet-menu button:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
 

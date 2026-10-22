@@ -521,6 +521,7 @@ export const settingsText = {
   menuPlaceholder: "메뉴 추가 (예: 칼국수)",
   menuReset: "기본 메뉴로 되돌리기",
   pickPet: "펫 고르기",
+  resetPosition: "펫 위치 초기화",
   petSize: "펫 크기",
   profile: "내 펫",
   petName: "이름",
@@ -718,6 +719,9 @@ export const sharedLines = () => [
   ...petQuips.skipped,
   ...petQuips.quiet,
   ...petQuips.resumed,
+  ...petQuips.found,
+  ...petQuips.edgeNo,
+  ...petQuips.edgeGiveUp,
   ...quipsFor("none"),
 ];
 
@@ -726,6 +730,7 @@ export const sharedLines = () => [
 export const petNames: Record<string, string> = { turtle: "거북이", cat: "고양이", dog: "강아지", rabbit: "토끼" };
 
 export const petMenuText = {
+  ask: "부탁하기",
   lunch: "점심 메뉴 추천",
   leave: "퇴근까지 얼마나 남았어?",
   schedule: "오늘 일정 알려줘",
@@ -752,6 +757,9 @@ export const petQuips = {
     "조용히 옆에 있을게요",
     "잠깐 눈 좀 붙이고 있을게요",
   ],
+  edgeNo: ["거기는 너무 구석이에요!", "앗, 거긴 너무 끝이에요", "벽에 끼면 답답해요", "저 안 보이잖아요. 여기 있을게요"],
+  edgeGiveUp: ["알겠어요... 여기 있을게요", "정 그렇다면 여기서 지낼게요", "좁지만 참아 볼게요"],
+  found: ["여기 있어요!", "찾았다! 제자리로 왔어요", "길을 잃었었어요. 이제 괜찮아요", "구석은 좀 답답했어요"],
   resumed: [
     "다시 말 걸게요!",
     "저 왔어요. 다시 챙겨 드릴게요",

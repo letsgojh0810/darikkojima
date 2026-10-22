@@ -328,7 +328,13 @@ export function SettingsApp() {
 
       {tab === "pet" && (
         <section className="pet-tab">
-          <h2>{t.pickPet}</h2>
+          {/* the reset sits on the title row so the tab does not grow; it acts at once, like the tray item */}
+          <div className="h2row">
+            <h2>{t.pickPet}</h2>
+            <button className="text-btn" onClick={() => emit("reset-position")}>
+              {t.resetPosition}
+            </button>
+          </div>
           <div className="pets">
             {petIds.map((id) => {
               const Anim = pets[id];
