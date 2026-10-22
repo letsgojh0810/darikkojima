@@ -47,14 +47,25 @@ h1 { margin: 0 12px 16px; font-size: 20px; line-height: 28px; font-weight: 700; 
 
 .pet-tab { flex: 1; }
 .pet-tab h2 { margin-top: 20px; }
-.pet-tab .group { max-width: 460px; }
+.pet-tab .cols { margin-top: 20px; }
+
+.name-input { width: 150px; }
+.lv-badge { color: var(--blue); font-weight: 700; }
+.bar { width: 100%; height: 8px; border-radius: var(--r-pill); background: var(--surface-sub); overflow: hidden; }
+.bar span { display: block; height: 100%; border-radius: inherit; background: var(--blue); transition: width var(--dur); }
+
+/* segmented choice: the picked one is a raised white chip */
+.seg { display: flex; flex: 1; gap: 2px; padding: 3px; border-radius: var(--r-sm); background: var(--surface-sub); }
+.seg button { flex: 1; height: 30px; border-radius: 8px; background: none; color: var(--text-2); font: 500 13px/1 var(--font); }
+.seg button[aria-checked="true"] { background: var(--surface); color: var(--text-1); font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.seg button:active { transform: none; }
 .pets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .pet-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 20px 8px 14px;
+  padding: 14px 8px 10px;
   border-radius: var(--r-md);
   background: var(--surface);
   color: var(--text-1);

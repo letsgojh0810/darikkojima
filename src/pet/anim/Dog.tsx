@@ -9,7 +9,7 @@ const EAR = "#B9783F";
 const MUZZLE = "#FFF1DC";
 
 // Golden puppy with floppy ears and an eye patch, sitting.
-export const DogAnim: PetAnimation = ({ state }) => {
+export const DogAnim: PetAnimation = ({ state, muted }) => {
   const blink = useBlink(state);
   return (
     <Sprite state={state} pet="dog">
@@ -25,16 +25,18 @@ export const DogAnim: PetAnimation = ({ state }) => {
         <ellipse cx="35" cy="40" rx="9" ry="16" transform="rotate(12 35 40)" fill={EAR} />
         <ellipse cx="85" cy="40" rx="9" ry="16" transform="rotate(-12 85 40)" fill={EAR} />
         <ellipse cx="60" cy="53" rx="14" ry="10" fill={MUZZLE} />
+        {/* drawn before the face so the tape (quiet mode) lies over it */}
+        <ellipse cx="60" cy="48" rx="5" ry="3.5" fill={INK} />
         <FrontFace
           state={state}
           blink={blink}
+          muted={muted}
           eyeY={40}
           mouthY={56}
           neutralMouth={
             <path d="M60 51.5 v3 M60 54.5 q-4 3 -8 0 M60 54.5 q4 3 8 0" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
           }
         />
-        <ellipse cx="60" cy="48" rx="5" ry="3.5" fill={INK} />
       </g>
     </Sprite>
   );

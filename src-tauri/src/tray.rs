@@ -1,6 +1,6 @@
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::TrayIconBuilder;
-use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Emitter, Listener, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub fn open_settings(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("settings") {
@@ -20,10 +20,17 @@ pub fn open_settings(app: &tauri::AppHandle) {
 
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
     let toggle = MenuItemBuilder::with_id("toggle", "펫 숨기기").build(app)?;
-    let quiet = MenuItemBuilder::with_id("quiet", "1시간 조용히").build(app)?;
+    let quiet = MenuItemBuilder::with_id("quiet", "조용히 하기").build(app)?;
     let settings = MenuItemBuilder::with_id("settings", "설정").build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "종료").build(app)?;
     let menu = MenuBuilder::new(app).items(&[&toggle, &quiet, &settings, &quit]).build()?;
+
+    // the pet window owns the quiet switch (it remembers it across restarts) and reports every change here
+    let quiet_label = quiet.clone();
+    app.listen_any("quiet-state", move |e| {
+        let on = e.payload() == "true";
+        let _ = quiet_label.set_text(if on { "다시 말 걸기" } else { "조용히 하기" });
+    });
 
     TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
@@ -41,7 +48,7 @@ pub fn setup(app: &tauri::App) -> tauri::Result<()> {
                 }
             }
             "quiet" => {
-                let _ = app.emit("quiet", 60);
+                let _ = app.emit("quiet-toggle", ());
             }
             "settings" => open_settings(app),
             "quit" => app.exit(0),

@@ -1,3 +1,4 @@
+import { MuteMask } from "./FrontFace";
 import type { PetAnimation } from "./types";
 import { useBlink } from "./useBlink";
 import "./CssSpriteAnim.css";
@@ -17,7 +18,7 @@ const C = {
 
 const line = { fill: "none", stroke: C.ink, strokeWidth: 2, strokeLinecap: "round" as const };
 
-export const CssSpriteAnim: PetAnimation = ({ state }) => {
+export const CssSpriteAnim: PetAnimation = ({ state, muted }) => {
   const blink = useBlink(state);
 
   const asleep = state === "sleep";
@@ -37,7 +38,9 @@ export const CssSpriteAnim: PetAnimation = ({ state }) => {
     </>
   );
 
-  const mouth = asleep ? (
+  const mouth = muted ? (
+    <MuteMask x={106} y={71} size={0.8} />
+  ) : asleep ? (
     <ellipse cx="106" cy="72" rx="2" ry="1.5" fill={C.ink} />
   ) : joy ? (
     <>

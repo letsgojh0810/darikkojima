@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { petIds } from "../pet/anim/pets";
-import { calendarMessage, defaultLunchMenus, greetingMessage, lunchReply, momentMessage, quipsFor, sharedLines } from "./ko";
+import {
+  calendarMessage,
+  defaultLunchMenus,
+  greetingMessage,
+  leaveMessage,
+  levelUpMessage,
+  lunchReply,
+  momentMessage,
+  quipsFor,
+  scheduleMessage,
+  sharedLines,
+} from "./ko";
 
 describe("shared lines", () => {
   it("no line said by every pet names a species", () => {
@@ -35,6 +46,37 @@ describe("lunchReply", () => {
   it("has 40 default menus without duplicates", () => {
     expect(defaultLunchMenus).toHaveLength(40);
     expect(new Set(defaultLunchMenus).size).toBe(40);
+  });
+});
+
+describe("asking the pet", () => {
+  const first = () => 0;
+  it("says how long until leaving, in hours and minutes", () => {
+    expect(leaveMessage({ kind: "working", min: 135 }, first)).toBe("퇴근까지 2시간 15분 남았어요");
+    expect(leaveMessage({ kind: "working", min: 120 }, first)).toBe("퇴근까지 2시간 남았어요");
+    expect(leaveMessage({ kind: "working", min: 7 }, first)).toBe("퇴근까지 7분 남았어요");
+    expect(leaveMessage({ kind: "after" }, first)).not.toContain("{d}");
+  });
+
+  it("names the next event of the day, or says there is none / no calendar", () => {
+    const at = (hhmm: string) => new Date(`2026-10-20T${hhmm}:00`);
+    expect(scheduleMessage([{ title: "주간회의", start: at("10:30") }, { title: "1:1", start: at("15:00") }], true)).toBe(
+      "오늘 남은 일정은 2개예요. 다음은 10시 30분 '주간회의'",
+    );
+    expect(scheduleMessage([{ title: "주간회의", start: at("10:00") }], true)).toContain("하나");
+    expect(scheduleMessage([], true, first)).toContain("남은 일정이 없어요");
+    expect(scheduleMessage([], false)).toContain("일정 탭");
+  });
+});
+
+describe("levelUpMessage", () => {
+  it("puts the level and the name in, never leaving a placeholder", () => {
+    for (let i = 0; i < 5; i++) {
+      const line = levelUpMessage(7, "나비", () => i / 5);
+      expect(line).toContain("Lv.7");
+      expect(line).not.toMatch(/\{n\}|\{name\}/);
+    }
+    expect(levelUpMessage(3, "나비", () => 0.45)).toContain("나비");
   });
 });
 

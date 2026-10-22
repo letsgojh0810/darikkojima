@@ -13,7 +13,7 @@ const random = (menus: string[]) => menus[Math.floor(Math.random() * menus.lengt
  * Lunch roulette: names flicker for about a second, then one stays. The more it is spun the more it teases (see lunchReply).
  * `onTouch` keeps the bubble's own timer fresh while the user is playing with it.
  */
-export function LunchBubble({ menus, onTouch, onClose }: { menus: string[]; onTouch(): void; onClose(): void }) {
+export function LunchBubble({ menus, onTouch, onSpin, onClose }: { menus: string[]; onTouch(): void; onSpin(): void; onClose(): void }) {
   const [phase, setPhase] = useState<Phase>({ kind: "ask" });
   const [spins, setSpins] = useState(0);
   const [question] = useState(() => lunchAskLine());
@@ -35,6 +35,7 @@ export function LunchBubble({ menus, onTouch, onClose }: { menus: string[]; onTo
 
   const spin = () => {
     onTouch();
+    onSpin();
     setSpins((n) => n + 1);
     setPhase({ kind: "spin", shown: random(menus) });
   };

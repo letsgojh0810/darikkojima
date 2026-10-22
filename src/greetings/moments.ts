@@ -43,6 +43,25 @@ export function nextMoment(now: Date, s: Settings, said: ReadonlySet<string>): M
   return momentsOf(now, s).find((m) => m.until > now && !said.has(m.id));
 }
 
+/** Where the day stands for "퇴근까지 얼마나 남았어?"; minutes are rounded up so "1분" never shows as 0. */
+export type LeaveStatus =
+  | { kind: "off" }
+  | { kind: "before"; min: number }
+  | { kind: "lunch"; min: number }
+  | { kind: "working"; min: number }
+  | { kind: "after" };
+
+export function leaveStatus(now: Date, s: Settings): LeaveStatus {
+  if (!s.workHours.days.includes(now.getDay())) return { kind: "off" };
+  const start = atClock(now, s.workHours.start);
+  const end = atClock(now, s.workHours.end);
+  if (now < start) return { kind: "before", min: Math.ceil((start.getTime() - now.getTime()) / MIN) };
+  if (now >= end) return { kind: "after" };
+  const min = Math.ceil((end.getTime() - now.getTime()) / MIN);
+  const inLunch = now >= atClock(now, s.lunch.start) && now < atClock(now, s.lunch.end);
+  return { kind: inLunch ? "lunch" : "working", min };
+}
+
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 
 // shortcut: "already said today" lives in localStorage, so clearing site data replays the day's moments once

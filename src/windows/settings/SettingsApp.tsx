@@ -5,8 +5,9 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { isGoogleCalendarPage, normalizeIcsUrl } from "../../calendar/url";
 import { dayLabels, defaultLunchMenus, devText, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
 import { DevPanel } from "./DevPanel";
-import { loadSettings, saveSettings } from "../../store";
-import type { CustomReminder, ReminderId, Settings } from "../../store/settings";
+import { loadProgress, loadSettings, saveSettings } from "../../store";
+import { levelOf, type Progress } from "../../pet/progress";
+import type { CustomReminder, PetPreview, ReminderId, Settings } from "../../store/settings";
 import { petIds, pets } from "../../pet/anim/pets";
 import "../../tokens.css";
 import "./SettingsApp.css";
@@ -106,6 +107,14 @@ export function SettingsApp() {
     };
   }, []);
 
+  // read-only here: closeness is earned in the pet window
+  const [progress, setProgress] = useState<Progress>();
+  useEffect(() => {
+    loadProgress().then(setProgress);
+  }, []);
+  const lv = levelOf(progress?.exp ?? 0);
+  const barPct = lv.max ? 100 : (lv.into / lv.need) * 100;
+
   useEffect(() => {
     Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
       setS(loaded);
@@ -114,11 +123,13 @@ export function SettingsApp() {
     });
   }, []);
 
-  const pet = s?.pet;
-  const petScale = s?.petScale;
+  // everything on the pet tab shows on the pet right away; 저장 keeps it, 취소 or closing reloads what is stored
+  const preview: PetPreview | undefined = s && { pet: s.pet, petScale: s.petScale, petProfiles: s.petProfiles, petLabel: s.petLabel };
+  const previewKey = JSON.stringify(preview ?? null);
   useEffect(() => {
-    if (pet !== undefined && petScale !== undefined) emit("pet-preview", { pet, petScale });
-  }, [pet, petScale]);
+    if (preview) emit("pet-preview", preview);
+    // previewKey stands for the preview's content, which is what should trigger a resend
+  }, [previewKey]);
   if (!s || !saved) return null;
 
   const update = setS;
@@ -330,20 +341,58 @@ export function SettingsApp() {
             })}
           </div>
 
-          <h2>{t.petSize}</h2>
-          <div className="group">
-            <div className="row">
-              <input
-                type="range"
-                aria-label={t.petSize}
-                min={50}
-                max={150}
-                step={5}
-                value={Math.round(s.petScale * 100)}
-                style={{ "--pct": `${s.petScale * 100 - 50}%` } as CSSProperties}
-                onChange={(e) => update({ ...s, petScale: Number(e.target.value) / 100 })}
-              />
-              <span className="pct">{Math.round(s.petScale * 100)}%</span>
+          <div className="cols">
+            <div className="col">
+              <Group title={t.profile}>
+                <Row label={t.petName}>
+                  <input
+                    className="name-input"
+                    value={s.petProfiles[s.pet]?.name ?? ""}
+                    maxLength={8}
+                    placeholder={petNames[s.pet]}
+                    onChange={(e) => update({ ...s, petProfiles: { ...s.petProfiles, [s.pet]: { name: e.target.value } } })}
+                  />
+                </Row>
+                <Row label={t.level} desc={lv.max ? t.levelMax : t.levelNext(lv.need - lv.into)}>
+                  <span className="lv-badge">Lv.{lv.level}</span>
+                </Row>
+                <div className="row stack">
+                  <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(barPct)}>
+                    <span style={{ width: `${barPct}%` }} />
+                  </div>
+                  <div className="desc">{t.levelHint}</div>
+                </div>
+              </Group>
+            </div>
+
+            <div className="col">
+              <Group title={t.petSize}>
+                <div className="row">
+                  <input
+                    type="range"
+                    aria-label={t.petSize}
+                    min={50}
+                    max={150}
+                    step={5}
+                    value={Math.round(s.petScale * 100)}
+                    style={{ "--pct": `${s.petScale * 100 - 50}%` } as CSSProperties}
+                    onChange={(e) => update({ ...s, petScale: Number(e.target.value) / 100 })}
+                  />
+                  <span className="pct">{Math.round(s.petScale * 100)}%</span>
+                </div>
+              </Group>
+
+              <Group title={t.labelTitle}>
+                <div className="row">
+                  <div className="seg" role="radiogroup" aria-label={t.labelTitle}>
+                    {(Object.keys(t.labelOptions) as Settings["petLabel"][]).map((k) => (
+                      <button key={k} role="radio" aria-checked={s.petLabel === k} onClick={() => update({ ...s, petLabel: k })}>
+                        {t.labelOptions[k]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </Group>
             </div>
           </div>
         </section>

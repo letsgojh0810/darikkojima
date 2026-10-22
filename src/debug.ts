@@ -14,6 +14,12 @@ export type DebugCmd =
   | { type: "ttl"; ms: number | null }
   | { type: "state"; state: PetState | null }
   | { type: "quip" }
+  | { type: "exp"; amount: number }
+  /** jumps straight to the first point of a level (Lv.1 = 0 points, i.e. a reset) */
+  | { type: "level"; level: number }
+  | { type: "levelUp" }
+  /** shows another pet without saving, to look at each one's moods and moves */
+  | { type: "pet"; id: string }
   /** null = follow Windows again */
   | { type: "theme"; mode: "light" | "dark" | null };
 

@@ -294,6 +294,40 @@ export function momentMessage(id: "countdown3h" | "countdown1h" | "goodbye", fri
   return pick(id === "goodbye" && friday ? momentLines.goodbyeFriday : momentLines[id], rand);
 }
 
+/* ───────── 우클릭 메뉴의 부탁하기 ───────── */
+
+const duration = (min: number) => {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h ? (m ? `${h}시간 ${m}분` : `${h}시간`) : `${m}분`;
+};
+
+const leaveLines = {
+  working: ["퇴근까지 {d} 남았어요", "{d}만 버티면 퇴근이에요", "퇴근까지 {d}! 조금만 더 힘내요", "남은 시간 {d}. 할 수 있어요"],
+  lunch: ["지금은 점심시간이에요. 퇴근까지는 {d} 남았어요", "점심 맛있게 드세요. 퇴근까지는 {d}이에요"],
+  before: ["아직 출근 전이에요. 일 시작까지 {d} 남았어요", "벌써 퇴근 생각이요? 아직 일 시작 {d} 전이에요"],
+  after: ["퇴근 시간이 지났어요. 얼른 퇴근해요!", "벌써 퇴근 시간이 지났어요. 오늘은 여기까지요", "퇴근 시간 지났어요. 나머지는 내일의 몫이에요"],
+  off: ["오늘은 쉬는 날이에요. 퇴근 걱정은 내려놔요", "쉬는 날엔 퇴근 시간도 쉬어요"],
+};
+
+/** Answer to "퇴근까지 얼마나 남았어?" for a status from greetings/moments.ts leaveStatus. */
+export function leaveMessage(st: { kind: keyof typeof leaveLines; min?: number }, rand: () => number = Math.random) {
+  return pick(leaveLines[st.kind], rand).split("{d}").join(duration(st.min ?? 0));
+}
+
+const scheduleLines = {
+  none: ["오늘 남은 일정이 없어요. 집중하기 좋은 날이에요", "오늘은 더 남은 일정이 없어요"],
+  notConnected: ["연결된 캘린더가 없어요. 설정의 일정 탭에서 연결할 수 있어요"],
+};
+
+/** Answer to "오늘 일정 알려줘": how many are left today and which one is next. */
+export function scheduleMessage(left: { title: string; start: Date }[], connected: boolean, rand: () => number = Math.random) {
+  if (!connected) return pick(scheduleLines.notConnected, rand);
+  if (!left.length) return pick(scheduleLines.none, rand);
+  const head = left.length === 1 ? "오늘 남은 일정은 하나예요" : `오늘 남은 일정은 ${left.length}개예요`;
+  return `${head}. 다음은 ${clock(left[0].start)} '${shorten(left[0].title)}'`;
+}
+
 /* ───────── 점심 룰렛 ───────── */
 
 const lunchAsk = [
@@ -488,6 +522,14 @@ export const settingsText = {
   menuReset: "기본 메뉴로 되돌리기",
   pickPet: "펫 고르기",
   petSize: "펫 크기",
+  profile: "내 펫",
+  petName: "이름",
+  level: "친밀도",
+  levelNext: (points: number) => `다음 레벨까지 ${points}점`,
+  levelMax: "최고 레벨이에요",
+  levelHint: "알림에 '했어요'를 누르거나 펫을 쓰다듬으면 친해져요",
+  labelTitle: "펫 아래 표시",
+  labelOptions: { both: "레벨+이름", name: "이름만", level: "레벨만", off: "끄기" },
   reminders: "알려줄 것들",
   every: "분마다",
   customPlaceholder: "알려줄 말 (예: 약 먹기)",
@@ -649,6 +691,18 @@ const petQuipsById: Record<string, string[]> = {
 /** What this pet may say when poked: the shared lines plus its own. */
 export const quipsFor = (petId: string) => [...commonQuips, ...(petQuipsById[petId] ?? [])];
 
+/** `{n}` is the new level, `{name}` the pet's name; no particle follows either, so none has to match the last letter */
+const levelUpLines = [
+  "레벨 업! 이제 Lv.{n}",
+  "Lv.{n} 달성! 우리 더 친해졌네요",
+  "{name}, Lv.{n} 달성!",
+  "축하해요, Lv.{n} 달성! 앞으로도 잘 부탁해요",
+  "Lv.{n}! 조금 더 편하게 지내요",
+];
+
+export const levelUpMessage = (level: number, name: string, rand: () => number = Math.random) =>
+  pick(levelUpLines, rand).split("{n}").join(String(level)).split("{name}").join(name);
+
 /** Every line that is said whatever the pet is; the test checks none of them names a species. */
 export const sharedLines = () => [
   ...Object.values(greetings).flat(),
@@ -658,8 +712,12 @@ export const sharedLines = () => [
   ...Object.values(lunchNag).flat(),
   ...Object.values(reminderMessages).flat(),
   ...calendarLines,
+  ...levelUpLines,
+  ...Object.values(leaveLines).flat(),
+  ...Object.values(scheduleLines).flat(),
   ...petQuips.skipped,
   ...petQuips.quiet,
+  ...petQuips.resumed,
   ...quipsFor("none"),
 ];
 
@@ -667,7 +725,15 @@ export const sharedLines = () => [
 
 export const petNames: Record<string, string> = { turtle: "거북이", cat: "고양이", dog: "강아지", rabbit: "토끼" };
 
-export const petMenuText = { lunch: "점심 메뉴 추천", settings: "설정", quiet: "1시간 조용히", quit: "종료" };
+export const petMenuText = {
+  lunch: "점심 메뉴 추천",
+  leave: "퇴근까지 얼마나 남았어?",
+  schedule: "오늘 일정 알려줘",
+  settings: "설정",
+  quietOn: "조용히 하기",
+  quietOff: "다시 말 걸기",
+  quit: "종료",
+};
 
 export const petQuips = {
   skipped: [
@@ -679,12 +745,18 @@ export const petQuips = {
     "알았어요, 오늘은 조용히 있을게요",
   ],
   quiet: [
-    "한 시간 동안 조용히 있을게요",
-    "한 시간 동안은 쥐 죽은 듯 있을게요",
-    "1시간 동안 방해 안 할게요",
-    "한 시간 뒤에 다시 올게요",
+    "조용히 있을게요. 필요하면 다시 불러 주세요",
+    "쉿, 방해 안 할게요",
+    "쥐 죽은 듯 있을게요",
     "집중하세요, 제가 지켜볼게요",
     "조용히 옆에 있을게요",
+    "잠깐 눈 좀 붙이고 있을게요",
+  ],
+  resumed: [
+    "다시 말 걸게요!",
+    "저 왔어요. 다시 챙겨 드릴게요",
+    "푹 쉬었어요. 다시 시작해요",
+    "다시 잔소리 모드예요",
   ],
   menuHint: "마우스 오른쪽 버튼을 누르면 설정이 열려요",
 };
@@ -724,6 +796,12 @@ export const devText = {
   themeLight: "라이트",
   themeDark: "다크",
   osNow: (dark: boolean) => `지금 Windows 설정: ${dark ? "다크" : "라이트"}`,
+  progress: "펫 성장 (친밀도·레벨)",
+  expPlus: (n: number) => `+${n}점`,
+  toLevel: (n: number) => `Lv.${n} 만들기`,
+  resetExp: "친밀도 0으로",
+  levelUp: "레벨업 말풍선",
+  petSwap: "펫 바꿔 보기 (저장 안 됨)",
   states: "펫 상태 고정",
   release: "고정 해제",
   quip: "클릭 한마디",

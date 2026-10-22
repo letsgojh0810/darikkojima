@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { defaultSettings, type Settings } from "../store/settings";
-import { momentsOf, nextMoment } from "./moments";
+import { leaveStatus, momentsOf, nextMoment } from "./moments";
+
+describe("leaveStatus", () => {
+  const at = (day: number, hhmm: string) => new Date(`2026-10-${day}T${hhmm}:00`);
+  it("counts down to the end of work, and says so during lunch", () => {
+    expect(leaveStatus(at(20, "15:45"), defaultSettings)).toEqual({ kind: "working", min: 135 });
+    expect(leaveStatus(at(20, "12:30"), defaultSettings)).toEqual({ kind: "lunch", min: 330 });
+  });
+
+  it("knows before work, after work and days off", () => {
+    expect(leaveStatus(at(20, "08:30"), defaultSettings)).toEqual({ kind: "before", min: 30 });
+    expect(leaveStatus(at(20, "18:00"), defaultSettings)).toEqual({ kind: "after" });
+    expect(leaveStatus(at(24, "10:00"), defaultSettings)).toEqual({ kind: "off" });
+  });
+
+  it("rounds a part of a minute up", () => {
+    expect(leaveStatus(new Date("2026-10-20T17:59:30"), defaultSettings)).toEqual({ kind: "working", min: 1 });
+  });
+});
 
 // 2026-10-20 is a Tuesday; 2026-10-24 a Saturday. Default work 09:00-18:00, lunch 12:00-13:00.
 const at = (day: number, hhmm: string) => new Date(`2026-10-${day}T${hhmm}:00`);

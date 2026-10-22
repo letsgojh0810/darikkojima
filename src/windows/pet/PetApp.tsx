@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, PhysicalPosition } from "@tauri-apps/api/window";
 import { createCalendar } from "../../calendar/calendar";
 import { applyTheme, type DebugCmd } from "../../debug";
-import { createMoments } from "../../greetings/moments";
+import { createMoments, leaveStatus } from "../../greetings/moments";
 import {
   calendarMessage,
   greetingMessage,
+  leaveMessage,
+  levelUpMessage,
   momentMessage,
   oneOf,
+  petNames,
   petMenuText,
   petQuips,
   quipsFor,
   reminderMessages,
+  scheduleMessage,
 } from "../../messages/ko";
 import { isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
 import { pets } from "../../pet/anim/pets";
@@ -21,10 +25,11 @@ import { LunchBubble } from "../../pet/LunchBubble";
 import { NoticeBubble } from "../../pet/NoticeBubble";
 import { addNotice, lunchTtl, nextExpiry, pruneNotices, setTtlOverride, type Notice } from "../../pet/notices";
 import { PetMenu } from "../../pet/PetMenu";
+import { award, LEVELS, levelOf, type Progress, type ProgressEvent } from "../../pet/progress";
 import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
-import { loadPetPos, loadSettings, savePetPos } from "../../store";
-import type { ReminderId, Settings } from "../../store/settings";
+import { loadPetPos, loadProgress, loadSettings, savePetPos, saveProgress } from "../../store";
+import { defaultSettings, type PetPreview, type ReminderId, type Settings } from "../../store/settings";
 import { startAutoUpdate } from "../../updater";
 import "../../tokens.css";
 import "./PetApp.css";
@@ -35,12 +40,28 @@ const greetedRecently = () => Date.now() - Number(localStorage.getItem("lastGree
 export function PetApp() {
   const stage = useRef<HTMLDivElement>(null);
   const scheduler = useRef<ReturnType<typeof createScheduler>>(undefined);
+  // the right-click menu answers from these, so they live outside the start-up effect too
+  const settingsRef = useRef<Settings>(undefined);
+  const calRef = useRef<ReturnType<typeof createCalendar>>(undefined);
   // Everything waiting is shown in ONE bubble (see pet/notices.ts); the lunch roulette is its own bubble and has priority.
   const [notices, setNotices] = useState<Notice[]>([]);
   const [lunch, setLunch] = useState<{ at: number } | null>(null);
   const [activity, setActivity] = useState(0);
   // only reminders put the pet in its nagging mood; greetings and the lunch bubble keep it friendly
-  const base = usePetState(notices.some((n) => n.kind === "reminder"), activity);
+  const awake = usePetState(notices.some((n) => n.kind === "reminder"), activity);
+
+  // "조용히 하기" has no end time, so it is remembered across restarts and the pet wears an X of tape over its mouth the whole time
+  const [quiet, setQuietState] = useState(() => localStorage.getItem("quiet") === "1");
+  const quietRef = useRef(quiet);
+  const setQuiet = (on: boolean) => {
+    quietRef.current = on;
+    setQuietState(on);
+    scheduler.current?.setQuiet(on);
+    localStorage.setItem("quiet", on ? "1" : "0");
+    emit("quiet-state", on);
+    say(oneOf(on ? petQuips.quiet : petQuips.resumed));
+  };
+  const base = awake;
   const addNote = (n: Omit<Notice, "at">) => setNotices((l) => addNotice(l, { ...n, at: Date.now() }, Date.now()));
   const showLunch = () => setLunch({ at: Date.now() });
   const [lunchMenus, setLunchMenus] = useState<string[]>([]);
@@ -55,11 +76,33 @@ export function PetApp() {
   const [dragging, setDragging] = useState(false);
   const [forced, setForced] = useState<PetState | null>(null); // dev-only: pins an animation so it can be looked at
   const state: PetState = forced ?? (dragging ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
-  const [petId, setPetId] = useState("turtle");
+  const [petId, setPetId] = useState(defaultSettings.pet);
   const petIdRef = useRef(petId);
   petIdRef.current = petId;
-  const Anim = pets[petId] ?? pets.turtle;
+  const Anim = pets[petId] ?? pets[defaultSettings.pet];
   const [petScale, setPetScale] = useState(1);
+  const [petProfiles, setPetProfiles] = useState<Settings["petProfiles"]>({});
+  const [petLabel, setPetLabel] = useState<Settings["petLabel"]>("both");
+  const petName = petProfiles[petId]?.name.trim() || petNames[petId] || "";
+  const nameRef = useRef(petName);
+  nameRef.current = petName;
+
+  // closeness: kept in a ref too, because the scheduler callbacks were created on the first render
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const progressRef = useRef<Progress | null>(null);
+  const level = progress ? levelOf(progress.exp).level : 1;
+  const commit = (after: Progress) => {
+    const before = progressRef.current;
+    if (!before) return;
+    progressRef.current = after;
+    setProgress(after);
+    saveProgress(after);
+    const lv = levelOf(after.exp).level;
+    if (lv > levelOf(before.exp).level) addNote({ key: "h:levelup", kind: "hello", message: levelUpMessage(lv, nameRef.current) });
+  };
+  const gain = (e: ProgressEvent, count = 1) => {
+    if (progressRef.current) commit(award(progressRef.current, e, new Date(), count));
+  };
 
   // scheduler: needs settings first
   useEffect(() => {
@@ -72,13 +115,24 @@ export function PetApp() {
     loadSettings().then((loaded) => {
       if (cancelled) return;
       settings = loaded;
+      settingsRef.current = loaded;
       setPetId(loaded.pet);
       setPetScale(loaded.petScale);
       setLunchMenus(loaded.lunchMenus);
+      setPetProfiles(loaded.petProfiles);
+      setPetLabel(loaded.petLabel);
+      loadProgress().then((p) => {
+        if (cancelled) return;
+        progressRef.current = p;
+        setProgress(p);
+      });
       s = createScheduler({
         getSettings: () => settings!,
         getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: cal?.inMeeting() ?? false }),
-        onFire: (id, message) => addNote({ key: `r:${id}`, kind: "reminder", id, message }),
+        onFire: (id, message) => {
+          addNote({ key: `r:${id}`, kind: "reminder", id, message });
+          gain("fired");
+        },
       });
       cal = createCalendar({
         getSettings: () => settings!,
@@ -94,6 +148,9 @@ export function PetApp() {
             : addNote({ key: `h:${id}`, kind: "hello", message: momentMessage(id, new Date().getDay() === 5) }),
       });
       scheduler.current = s;
+      calRef.current = cal;
+      s.setQuiet(quietRef.current);
+      emit("quiet-state", quietRef.current); // the tray label starts out right
       s.start();
       const firstFetch = cal.start();
       moments.start();
@@ -105,24 +162,30 @@ export function PetApp() {
           if (cancelled) return;
           if (await s!.canNotify("greeting")) {
             addNote({ key: "h:greeting", kind: "hello", message: greetingMessage(new Date(), cal!.nextEventToday()) });
+            gain("greet");
           }
         });
       }
     });
-    const unlistenQuiet = listen<number>("quiet", ({ payload }) => s?.quietFor(payload));
+    const unlistenQuiet = listen("quiet-toggle", () => setQuiet(!quietRef.current));
     const unlistenSettings = listen("settings-changed", async () => {
       settings = await loadSettings();
+      settingsRef.current = settings;
       setPetId(settings.pet);
       setPetScale(settings.petScale);
       setLunchMenus(settings.lunchMenus);
+      setPetProfiles(settings.petProfiles);
+      setPetLabel(settings.petLabel);
       s?.refresh();
       cal?.refresh();
       moments?.refresh();
     });
     // the settings window previews pet / size while the slider moves; cancel or close sends settings-changed to revert
-    const unlistenPreview = listen<{ pet: string; petScale: number }>("pet-preview", ({ payload }) => {
+    const unlistenPreview = listen<PetPreview>("pet-preview", ({ payload }) => {
       setPetId(payload.pet);
       setPetScale(payload.petScale);
+      setPetProfiles(payload.petProfiles);
+      setPetLabel(payload.petLabel);
     });
     // dev-only: the settings window's "테스트" tab plays behaviours on demand (see src/debug.ts)
     const unlistenDebug = import.meta.env.DEV
@@ -173,6 +236,18 @@ export function PetApp() {
               break;
             case "theme":
               applyTheme(c.mode);
+              break;
+            case "exp":
+              if (progressRef.current) commit({ ...progressRef.current, exp: progressRef.current.exp + c.amount });
+              break;
+            case "level":
+              if (progressRef.current) commit({ ...progressRef.current, exp: LEVELS[c.level - 1] ?? 0 });
+              break;
+            case "levelUp":
+              addNote({ key: "h:levelup", kind: "hello", message: levelUpMessage(levelOf(progressRef.current?.exp ?? 0).level, nameRef.current) });
+              break;
+            case "pet":
+              setPetId(c.id);
               break;
           }
         })
@@ -242,21 +317,28 @@ export function PetApp() {
   }, []);
 
   const answered = () => setActivity((n) => n + 1);
+  // only "했어요" on a reminder earns closeness; snoozing or skipping just closes
   const done = (key: string) => {
+    if (notices.find((n) => n.key === key)?.kind === "reminder") gain("done");
     setNotices((l) => l.filter((n) => n.key !== key));
     answered();
   };
-  const doneAll = () => {
+  const clearAll = () => {
     setNotices([]);
     answered();
   };
+  const doneAll = () => {
+    const reminders = notices.filter((n) => n.kind === "reminder").length;
+    if (reminders) gain("done", reminders);
+    clearAll();
+  };
   const snoozeAll = () => {
     for (const n of notices) if (n.kind === "reminder" && n.id) scheduler.current?.snooze(n.id);
-    doneAll();
+    clearAll();
   };
   const skipToday = () => {
     for (const n of notices) if (n.kind === "reminder" && n.id) scheduler.current?.skipToday(n.id);
-    doneAll();
+    clearAll();
     say(oneOf(petQuips.skipped));
   };
 
@@ -275,6 +357,7 @@ export function PetApp() {
     setClickCount((n) => n + 1); // remounts the sprite so a second click replays the hop
     clickTimer.current = setTimeout(() => setClicked(false), 500);
     say(oneOf(quipsFor(petId)));
+    gain("click");
   };
 
   // the right-click menu is the only way to settings besides the tray, so mention it once
@@ -303,6 +386,7 @@ export function PetApp() {
         <LunchBubble
           menus={lunchMenus}
           onTouch={() => setLunch({ at: Date.now() })}
+          onSpin={() => gain("spin")}
           onClose={() => {
             setLunch(null);
             answered();
@@ -317,15 +401,28 @@ export function PetApp() {
         <PetMenu
           onClose={() => setMenu(false)}
           items={[
+            // asking the pet
             { label: petMenuText.lunch, onSelect: showLunch },
-            { label: petMenuText.settings, onSelect: openSettings },
             {
-              label: petMenuText.quiet,
+              label: petMenuText.leave,
               onSelect: () => {
-                scheduler.current?.quietFor(60);
-                say(oneOf(petQuips.quiet));
+                if (settingsRef.current) {
+                  addNote({ key: "h:ask-leave", kind: "hello", message: leaveMessage(leaveStatus(new Date(), settingsRef.current)) });
+                }
               },
             },
+            {
+              label: petMenuText.schedule,
+              onSelect: () =>
+                addNote({
+                  key: "h:ask-schedule",
+                  kind: "hello",
+                  message: scheduleMessage(calRef.current?.eventsLeftToday() ?? [], (settingsRef.current?.icsUrls.length ?? 0) > 0),
+                }),
+            },
+            // the app itself
+            { label: quiet ? petMenuText.quietOff : petMenuText.quietOn, divider: true, onSelect: () => setQuiet(!quiet) },
+            { label: petMenuText.settings, onSelect: openSettings },
             { label: petMenuText.quit, onSelect: quitApp, danger: true },
           ]}
         />
@@ -361,8 +458,15 @@ export function PetApp() {
           setMenu(true);
         }}
       >
-        <Anim key={clickCount} state={state} />
+        <Anim key={clickCount} state={state} muted={quiet} />
       </div>
+      {/* keyed by level so the tag pops once when the level goes up */}
+      {petLabel !== "off" && progress && (
+        <div className="pet-label" key={level}>
+          {petLabel !== "name" && <span className="lv">Lv.{level}</span>}
+          {petLabel !== "level" && <span>{petName}</span>}
+        </div>
+      )}
     </div>
   );
 }

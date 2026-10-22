@@ -3,7 +3,8 @@ import type { CalEvent } from "../../calendar/CalendarSource";
 import { IcsSource } from "../../calendar/IcsSource";
 import { applyTheme, sendDebug } from "../../debug";
 import { momentsOf } from "../../greetings/moments";
-import { devText as d, reminderLabels } from "../../messages/ko";
+import { devText as d, petNames, reminderLabels } from "../../messages/ko";
+import { petIds } from "../../pet/anim/pets";
 import type { PetState } from "../../pet/anim/types";
 import type { ReminderId, Settings } from "../../store/settings";
 
@@ -95,6 +96,29 @@ export function DevPanel({ s }: { s: Settings }) {
               </button>
             ))}
             <span className="desc">{d.osNow(window.matchMedia("(prefers-color-scheme: dark)").matches)}</span>
+          </Buttons>
+
+          <Buttons title={d.progress}>
+            {[10, 50].map((n) => (
+              <button key={n} className="secondary" onClick={() => sendDebug({ type: "exp", amount: n })}>
+                {d.expPlus(n)}
+              </button>
+            ))}
+            {[3, 5, 10].map((n) => (
+              <button key={n} className="secondary" onClick={() => sendDebug({ type: "level", level: n })}>
+                {d.toLevel(n)}
+              </button>
+            ))}
+            <button className="secondary" onClick={() => sendDebug({ type: "levelUp" })}>{d.levelUp}</button>
+            <button className="remove" onClick={() => sendDebug({ type: "level", level: 1 })}>{d.resetExp}</button>
+          </Buttons>
+
+          <Buttons title={d.petSwap}>
+            {petIds.map((id) => (
+              <button key={id} className="secondary" onClick={() => sendDebug({ type: "pet", id })}>
+                {petNames[id]}
+              </button>
+            ))}
           </Buttons>
 
           <Buttons title={d.states}>

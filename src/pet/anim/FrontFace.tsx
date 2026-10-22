@@ -7,6 +7,19 @@ const SWEAT = "#8CC5FF";
 const SPARK = "#FFD66B";
 const line = { fill: "none", stroke: INK, strokeWidth: 2, strokeLinecap: "round" as const };
 
+/** Two crossed strips of tape over the mouth: the pet is keeping quiet on purpose. Centred on (x, y). */
+export function MuteMask({ x, y, size = 1 }: { x: number; y: number; size?: number }) {
+  const strip = (deg: number) => (
+    <rect x="-11" y="-3.5" width="22" height="7" rx="3" fill="#fff" stroke="#B0B8C1" strokeWidth="1.2" transform={`rotate(${deg})`} />
+  );
+  return (
+    <g transform={`translate(${x} ${y}) scale(${size})`}>
+      {strip(28)}
+      {strip(-28)}
+    </g>
+  );
+}
+
 /** How far the head sinks (sleep) or lifts (click). */
 export const headDy = (s: PetState) => (s === "sleep" ? 3 : s === "click" ? -3 : 0);
 
@@ -20,12 +33,14 @@ export function FrontFace({
   eyeY,
   mouthY,
   neutralMouth,
+  muted,
 }: {
   state: PetState;
   blink: boolean;
   eyeY: number;
   mouthY: number;
   neutralMouth: ReactNode;
+  muted?: boolean;
 }) {
   const closed = state === "sleep" || blink;
   const joy = state === "hover" || state === "click" || state === "drag";
@@ -57,7 +72,9 @@ export function FrontFace({
           <path d={`M90 ${eyeY - 22} q3 4 0 6.5 q-3 -2.5 0 -6.5 z`} fill={SWEAT} />
         </>
       )}
-      {state === "sleep" ? (
+      {muted ? (
+        <MuteMask x={60} y={mouthY} />
+      ) : state === "sleep" ? (
         <ellipse cx="60" cy={mouthY} rx="2" ry="1.5" fill={INK} />
       ) : joy ? (
         <>

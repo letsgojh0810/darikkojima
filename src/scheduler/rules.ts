@@ -10,7 +10,7 @@ export interface RuleContext {
   kind: "reminder" | "calendar" | "greeting";
   fullscreen: boolean;
   inMeeting: boolean;
-  /** epoch ms until which the tray's "1시간 조용히" is active */
+  /** epoch ms until which "조용히 하기" holds everything back (Infinity while the switch is on) */
   quietUntil: number | null;
 }
 

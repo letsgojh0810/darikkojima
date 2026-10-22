@@ -91,12 +91,14 @@ describe("scheduler", () => {
     s.stop();
   });
 
-  it("quiet mode holds reminders, then resumes", async () => {
+  it("quiet mode holds reminders for as long as it is on, then resumes", async () => {
     const { s, fired } = setup("2026-10-20T10:00:00");
     s.start();
-    s.quietFor(60);
-    await vi.advanceTimersByTimeAsync(59 * MIN);
+    s.setQuiet(true);
+    await vi.advanceTimersByTimeAsync(90 * MIN); // 11:30, still before lunch
     expect(fired).toEqual([]);
+    expect(await s.canNotify("greeting")).toBe(false);
+    s.setQuiet(false);
     await vi.advanceTimersByTimeAsync(2 * MIN);
     expect(fired.length).toBeGreaterThan(0);
     s.stop();

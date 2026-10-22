@@ -27,6 +27,10 @@ export interface Settings {
   pet: string;
   /** 0.5 to 1.5, 1 = the drawn size */
   petScale: number;
+  /** per pet id; an empty name falls back to the species name */
+  petProfiles: Record<string, { name: string }>;
+  /** what the small tag under the pet shows */
+  petLabel: "both" | "name" | "level" | "off";
   reminders: Record<ReminderId, { enabled: boolean; intervalMin: number }>;
   custom: CustomReminder[];
   moments: Moments;
@@ -38,9 +42,14 @@ export interface Settings {
   calendarLeadMin: number;
 }
 
+/** what the settings window sends to the pet window while the pet tab is being edited, before 저장 */
+export type PetPreview = Pick<Settings, "pet" | "petScale" | "petProfiles" | "petLabel">;
+
 export const defaultSettings: Settings = {
-  pet: "turtle",
+  pet: "cat",
   petScale: 1,
+  petProfiles: {},
+  petLabel: "both",
   reminders: {
     legs: { enabled: true, intervalMin: 30 },
     posture: { enabled: true, intervalMin: 45 },

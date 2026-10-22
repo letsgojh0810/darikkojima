@@ -72,13 +72,17 @@ export function createCalendar(d: CalendarDeps) {
       clearTimeout(alertTimer);
     },
     inMeeting: () => isInMeeting(events(), new Date()),
-    /** the earliest event that still starts later today */
-    nextEventToday(now = new Date()) {
+    /** events that still start later today, earliest first */
+    eventsLeftToday(now = new Date()) {
       const midnight = new Date(now);
       midnight.setHours(24, 0, 0, 0);
       return events()
         .filter((e) => e.start >= now && e.start < midnight)
-        .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+        .sort((a, b) => a.start.getTime() - b.start.getTime());
+    },
+    /** the earliest event that still starts later today */
+    nextEventToday(now = new Date()) {
+      return this.eventsLeftToday(now)[0];
     },
   };
 }

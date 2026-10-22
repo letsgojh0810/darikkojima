@@ -1,7 +1,7 @@
 .pet-menu {
   list-style: none;
   box-sizing: border-box;
-  width: 160px;
+  width: 200px;
   margin: 0 0 8px;
   padding: 6px;
   border-radius: var(--r-md);
@@ -30,7 +30,7 @@
 .pet-menu button:active { background: var(--press); }
 .pet-menu button:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
 
-.pet-menu .danger { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+.pet-menu .divider, .pet-menu .danger { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
 .pet-menu .danger button { color: var(--red); }
 
 @keyframes menu-in {

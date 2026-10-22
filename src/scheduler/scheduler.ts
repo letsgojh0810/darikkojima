@@ -94,8 +94,9 @@ export function createScheduler(d: SchedulerDeps) {
       skipped.add(id);
       arm();
     },
-    quietFor(minutes: number) {
-      quietUntil = Date.now() + minutes * MIN;
+    /** "조용히 하기" stays on until it is switched off; nothing is said in between (greetings included) */
+    setQuiet(on: boolean) {
+      quietUntil = on ? Infinity : null;
     },
     /** same gate the reminders go through, for alerts that are not scheduled here (calendar) */
     async canNotify(kind: RuleContext["kind"]) {
