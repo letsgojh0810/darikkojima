@@ -19,14 +19,15 @@ Tauri 2 + React + TypeScript + Vite. Rust는 네이티브(창 제어, 트레이,
 - 외부 전송 금지 (ICS fetch 제외). 모든 데이터는 로컬.
 
 ## 명령
-- 개발: `npm run tauri dev` / 빌드: `npm run tauri build` / 테스트: `npm test` (vitest)
+- 개발: `npm run app` (설치한 앱과 데이터·실행이 분리된 com.darikkojima.dev) / 빌드: `npm run tauri build` / 테스트: `npm test` (vitest)
+- `npm run tauri dev`는 설치한 앱과 같은 데이터를 쓰므로 쓰지 않는다.
 - 프로젝트 루트에서 `npm --prefix`, `cargo --manifest-path src-tauri/Cargo.toml` 식으로 실행. `cd` 이동 지양.
 
 ## 작업 규칙
 - 흐름: plan → execute → review → verify (OMC). 작성과 리뷰는 별도 패스. 자기 승인 금지.
 - ponytail: 요청되지 않은 기능/추상화/설정 금지. 최소 코드로 끝까지. 새 로직은 테스트 하나 이상.
 - 불확실한 플랫폼 제약은 PoC로 먼저 검증 (P1 click-through, P2 전체화면, P3 메모리).
-- 단계마다 `npm run tauri dev`로 동작 확인 가능한 상태 유지.
+- 단계마다 `npm run app`으로 동작 확인 가능한 상태 유지.
 - Tauri/플러그인 API는 구현 전 공식 문서 확인 (document-specialist).
 - 코드 서명 키(`*.key`)와 업데이트 서명 개인키는 절대 커밋 금지.
 - 커밋은 요청 시에만. 릴리스는 `v*` 태그 push로만.

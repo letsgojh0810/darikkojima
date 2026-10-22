@@ -147,7 +147,7 @@ Mac은 Apple Silicon만 시험 중이고, Intel Mac과 Linux는 아직 지원하
 
 ```powershell
 npm install
-npm run tauri dev      # 개발 실행 (개발 모드에서는 자동 업데이트를 확인하지 않습니다)
+npm run app            # 개발 실행: 설치한 앱과 따로 com.darikkojima.dev 이름으로 데이터를 쓰고, 자동 업데이트도 하지 않습니다
 npm test               # 단위 테스트 (vitest)
 npm run tauri build    # 설치 파일 빌드 (아래 서명 키 필요)
 ```

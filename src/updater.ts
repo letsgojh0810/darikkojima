@@ -12,6 +12,8 @@ async function updateOnce() {
 }
 
 export function startAutoUpdate() {
+  // a dev run must never fetch and run the real installer over the installed app
+  if (import.meta.env.DEV) return () => {};
   updateOnce();
   const t = setInterval(updateOnce, EVERY_MS);
   return () => clearInterval(t);

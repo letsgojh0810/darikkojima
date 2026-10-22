@@ -45,7 +45,7 @@ const tabs = [
   { id: "dev", label: devText.tab },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
-/** the test tab only exists when running `npm run tauri dev` */
+/** the test tab only exists in a dev run (`npm run app`) */
 const visibleTabs = tabs.filter((x) => x.id !== "dev" || import.meta.env.DEV);
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange(v: boolean): void }) {
