@@ -1,3 +1,5 @@
+import { ANCHORS } from "../outfit";
+import { OutfitLayer } from "./Outfit";
 import { FrontFace, INK, headDy } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -9,7 +11,7 @@ const EAR = "#B9783F";
 const MUZZLE = "#FFF1DC";
 
 // Golden puppy with floppy ears and an eye patch, sitting.
-export const DogAnim: PetAnimation = ({ state, muted }) => {
+export const DogAnim: PetAnimation = ({ state, muted, outfit }) => {
   const blink = useBlink(state);
   return (
     <Sprite state={state} pet="dog">
@@ -37,6 +39,7 @@ export const DogAnim: PetAnimation = ({ state, muted }) => {
             <path d="M60 51.5 v3 M60 54.5 q-4 3 -8 0 M60 54.5 q4 3 8 0" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
           }
         />
+        <OutfitLayer outfit={outfit} a={ANCHORS.dog} />
       </g>
     </Sprite>
   );

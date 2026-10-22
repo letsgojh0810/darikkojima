@@ -3,10 +3,21 @@ import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { isGoogleCalendarPage, normalizeIcsUrl } from "../../calendar/url";
-import { dayLabels, defaultLunchMenus, devText, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
+import {
+  dayLabels,
+  defaultLunchMenus,
+  devText,
+  itemNames,
+  petNames,
+  reminderLabels,
+  settingsText as t,
+  slotNames,
+  unlockHint,
+} from "../../messages/ko";
 import { DevPanel } from "./DevPanel";
 import { loadProgress, loadSettings, saveSettings } from "../../store";
-import { levelOf, type Progress } from "../../pet/progress";
+import { isUnlocked, ITEMS, SLOTS, wearable } from "../../pet/outfit";
+import { emptyProgress, levelOf, type Progress } from "../../pet/progress";
 import type { CustomReminder, PetPreview, ReminderId, Settings } from "../../store/settings";
 import { petIds, pets } from "../../pet/anim/pets";
 import "../../tokens.css";
@@ -21,6 +32,7 @@ const tabs = [
   { id: "calendar", label: t.tabCalendar },
   { id: "talk", label: t.tabTalk },
   { id: "pet", label: t.tabPet },
+  { id: "grow", label: t.tabGrow },
   { id: "dev", label: devText.tab },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
@@ -113,7 +125,10 @@ export function SettingsApp() {
     loadProgress().then(setProgress);
   }, []);
   const lv = levelOf(progress?.exp ?? 0);
+  const titles = progress?.titles ?? [];
+  const [confirmReset, setConfirmReset] = useState(false);
   const barPct = lv.max ? 100 : (lv.into / lv.need) * 100;
+  const Preview = pets[s?.pet ?? ""] ?? pets.cat;
 
   useEffect(() => {
     Promise.all([loadSettings(), isEnabled()]).then(([loaded, on]) => {
@@ -124,7 +139,12 @@ export function SettingsApp() {
   }, []);
 
   // everything on the pet tab shows on the pet right away; 저장 keeps it, 취소 or closing reloads what is stored
-  const preview: PetPreview | undefined = s && { pet: s.pet, petScale: s.petScale, petProfiles: s.petProfiles, petLabel: s.petLabel };
+  const preview: PetPreview | undefined = s && {
+    pet: s.pet,
+    petScale: s.petScale,
+    petProfiles: s.petProfiles,
+    petLabel: s.petLabel,
+  };
   const previewKey = JSON.stringify(preview ?? null);
   useEffect(() => {
     if (preview) emit("pet-preview", preview);
@@ -359,15 +379,6 @@ export function SettingsApp() {
                     onChange={(e) => update({ ...s, petProfiles: { ...s.petProfiles, [s.pet]: { name: e.target.value } } })}
                   />
                 </Row>
-                <Row label={t.level} desc={lv.max ? t.levelMax : t.levelNext(lv.need - lv.into)}>
-                  <span className="lv-badge">Lv.{lv.level}</span>
-                </Row>
-                <div className="row stack">
-                  <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(barPct)}>
-                    <span style={{ width: `${barPct}%` }} />
-                  </div>
-                  <div className="desc">{t.levelHint}</div>
-                </div>
               </Group>
             </div>
 
@@ -402,6 +413,106 @@ export function SettingsApp() {
             </div>
           </div>
         </section>
+      )}
+
+      {tab === "grow" && (
+        <div className="cols">
+          <div className="col">
+            {/* what the draft outfit looks like, before 저장 */}
+            <div className="outfit-preview" aria-hidden>
+              <Preview state="idle" outfit={wearable(s.petProfiles[s.pet]?.outfit, lv.level, titles)} />
+            </div>
+
+            <Group title={t.level}>
+              <div className="row stack" title={t.levelHint}>
+                <div className="lvline">
+                  <strong>Lv.{lv.level}</strong>
+                  <span className="desc">{lv.max ? t.levelMax : t.levelNext(lv.need - lv.into)}</span>
+                  {!confirmReset && (
+                    <button className="remove" onClick={() => setConfirmReset(true)}>
+                      {t.resetOpen}
+                    </button>
+                  )}
+                </div>
+                <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(barPct)}>
+                  <span style={{ width: `${barPct}%` }} />
+                </div>
+              </div>
+              {/* irreversible, so two steps: the first press only unfolds the warning */}
+              {confirmReset && (
+                <div className="danger-box" role="alertdialog" aria-label={t.resetTitle}>
+                  <strong>{t.resetTitle}</strong>
+                  <p>{t.resetWarn}</p>
+                  <div className="actions">
+                    <button className="secondary" onClick={() => setConfirmReset(false)}>
+                      {t.resetKeep}
+                    </button>
+                    <button
+                      className="danger-btn"
+                      onClick={() => {
+                        emit("progress-reset"); // the pet window owns the record; it resets and saves it
+                        setProgress(emptyProgress(new Date()));
+                        setConfirmReset(false);
+                      }}
+                    >
+                      {t.resetConfirm}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Group>
+          </div>
+
+          <div className="col">
+            <Group title={t.wardrobe(s.petProfiles[s.pet]?.name.trim() || petNames[s.pet])}>
+              <Row desc={t.secretCount(ITEMS.filter((it) => it.title && titles.includes(it.title)).length, ITEMS.filter((it) => it.title).length)} />
+              {SLOTS.map((slot) => {
+                const worn = s.petProfiles[s.pet]?.outfit?.[slot];
+                const wear = (id: string | undefined) =>
+                  update({
+                    ...s,
+                    petProfiles: {
+                      ...s.petProfiles,
+                      [s.pet]: { name: s.petProfiles[s.pet]?.name ?? "", outfit: { ...s.petProfiles[s.pet]?.outfit, [slot]: id } },
+                    },
+                  });
+                return (
+                  <div className="row stack" key={slot}>
+                    <div className="label">{slotNames[slot]}</div>
+                    <div className="choices tight">
+                      <button className="choice" aria-pressed={!worn} onClick={() => wear(undefined)}>
+                        {t.itemNone}
+                      </button>
+                      {ITEMS.filter((it) => it.slot === slot).map((it) => {
+                        const open = isUnlocked(it, lv.level, titles);
+                        // a locked level item says its level; a secret one shows nothing but that it exists
+                        if (!open && it.title)
+                          return (
+                            <button key={it.id} className="choice secret" disabled title={t.secretHint}>
+                              ???
+                            </button>
+                          );
+                        return (
+                          <button
+                            key={it.id}
+                            className={it.title ? "choice found" : "choice"}
+                            disabled={!open}
+                            aria-pressed={worn === it.id}
+                            title={open ? undefined : unlockHint(it)}
+                            onClick={() => wear(it.id)}
+                          >
+                            {itemNames[it.id]}
+                            {!open && <span className="need">Lv.{it.level}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </Group>
+          </div>
+        </div>
       )}
 
       {import.meta.env.DEV && tab === "dev" && <DevPanel s={s} />}

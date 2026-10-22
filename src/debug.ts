@@ -18,6 +18,8 @@ export type DebugCmd =
   /** jumps straight to the first point of a level (Lv.1 = 0 points, i.e. a reset) */
   | { type: "level"; level: number }
   | { type: "levelUp" }
+  /** Lv.10 and every title, so all clothes are open */
+  | { type: "unlockAll" }
   /** shows another pet without saving, to look at each one's moods and moves */
   | { type: "pet"; id: string }
   /** null = follow Windows again */

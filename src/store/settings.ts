@@ -1,4 +1,5 @@
 import { defaultLunchMenus } from "../messages/ko";
+import type { Outfit } from "../pet/outfit";
 
 export type ReminderId = "legs" | "posture" | "water" | "stretch";
 
@@ -28,7 +29,7 @@ export interface Settings {
   /** 0.5 to 1.5, 1 = the drawn size */
   petScale: number;
   /** per pet id; an empty name falls back to the species name */
-  petProfiles: Record<string, { name: string }>;
+  petProfiles: Record<string, { name: string; outfit?: Outfit }>;
   /** what the small tag under the pet shows */
   petLabel: "both" | "name" | "level" | "off";
   reminders: Record<ReminderId, { enabled: boolean; intervalMin: number }>;

@@ -1,3 +1,5 @@
+import { ANCHORS } from "../outfit";
+import { OutfitLayer } from "./Outfit";
 import { FrontFace, INK, headDy } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -9,7 +11,7 @@ const BELLY = "#FFE3C2";
 const PINK = "#FF9F8E";
 
 // Orange tabby, sitting, flat colour planes only.
-export const CatAnim: PetAnimation = ({ state, muted }) => {
+export const CatAnim: PetAnimation = ({ state, muted, outfit }) => {
   const blink = useBlink(state);
   return (
     <Sprite state={state} pet="cat">
@@ -37,6 +39,7 @@ export const CatAnim: PetAnimation = ({ state, muted }) => {
           mouthY={55}
           neutralMouth={<path d="M60 51 q-3 4 -6 2 M60 51 q3 4 6 2" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />}
         />
+        <OutfitLayer outfit={outfit} a={ANCHORS.cat} />
       </g>
     </Sprite>
   );

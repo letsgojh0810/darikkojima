@@ -9,6 +9,7 @@ import {
   lunchReply,
   momentMessage,
   quipsFor,
+  reminderLine,
   scheduleMessage,
   sharedLines,
 } from "./ko";
@@ -66,6 +67,30 @@ describe("asking the pet", () => {
     expect(scheduleMessage([{ title: "주간회의", start: at("10:00") }], true)).toContain("하나");
     expect(scheduleMessage([], true, first)).toContain("남은 일정이 없어요");
     expect(scheduleMessage([], false)).toContain("일정 탭");
+  });
+});
+
+describe("closeness tone", () => {
+  it("adds tone lines by level and record lines from Lv.7", () => {
+    expect(quipsFor("cat", 1)).toContain("아직 어색하지만 잘 부탁해요");
+    expect(quipsFor("cat", 5)).toContain("저도 이제 이 정도는 아는 짬이에요");
+    expect(quipsFor("cat", 5)).not.toContain("아직 어색하지만 잘 부탁해요");
+    const totals = { done: { water: 23 }, streak: 3 };
+    expect(quipsFor("cat", 6, totals).some((q) => q.includes("23번"))).toBe(false);
+    expect(quipsFor("cat", 7, totals)).toContain("물 마시기, 지금까지 23번 챙겼어요");
+    expect(quipsFor("cat", 7, totals)).toContain("3일째 잘 챙기고 있어요");
+  });
+
+  it("says reminders in the closer tone only from Lv.5, and only some of the time", () => {
+    expect(reminderLine("water", 4, () => 0)).toBeUndefined();
+    expect(reminderLine("water", 5, () => 0)).toBeDefined();
+    expect(reminderLine("water", 9, () => 0.9)).toBeUndefined();
+    expect(reminderLine("custom-uuid", 9, () => 0)).toBeUndefined();
+  });
+
+  it("keeps the time-of-day greeting when no level is given", () => {
+    expect(greetingMessage(new Date("2026-10-20T09:00:00"), undefined, () => 0)).toBe("좋은 아침이에요");
+    expect(greetingMessage(new Date("2026-10-20T09:00:00"), undefined, () => 0, 9)).toBe("왔군요! 오늘도 같이 버텨 봐요");
   });
 });
 

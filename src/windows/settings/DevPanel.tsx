@@ -110,6 +110,7 @@ export function DevPanel({ s }: { s: Settings }) {
               </button>
             ))}
             <button className="secondary" onClick={() => sendDebug({ type: "levelUp" })}>{d.levelUp}</button>
+            <button className="secondary" onClick={() => sendDebug({ type: "unlockAll" })}>{d.unlockAll}</button>
             <button className="remove" onClick={() => sendDebug({ type: "level", level: 1 })}>{d.resetExp}</button>
           </Buttons>
 

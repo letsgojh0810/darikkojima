@@ -175,12 +175,89 @@ const greetings = {
   ],
 };
 
+/* ───────── 친밀도에 따른 말투 ───────── */
+
+/** how close the pet feels; shapes greetings, click lines and nagging. Polite (해요체) all the way, never 반말. */
+export type Tone = "shy" | "familiar" | "seasoned" | "close";
+export const toneOf = (level: number): Tone => (level >= 8 ? "close" : level >= 5 ? "seasoned" : level >= 3 ? "familiar" : "shy");
+
+const toneGreetings: Record<Tone, string[]> = {
+  shy: ["안녕하세요… 오늘도 잘 부탁드려요", "저 왔어요. 아직 조금 어색하네요", "오늘도 옆에 있어도 되죠?"],
+  familiar: ["오셨어요? 오늘도 같이 해요", "이제 출근 인사가 익숙하네요", "왔어요! 오늘도 제가 챙길게요"],
+  seasoned: ["왔어요? 오늘 할 일 다 알고 있어요", "출근하셨군요. 저 오늘도 컨디션 좋아요", "이 시간에 오시는 거, 이제 다 알죠"],
+  close: ["왔군요! 오늘도 같이 버텨 봐요", "든든한 동료 출근했어요", "기다렸어요. 오늘도 우리 잘해 봐요"],
+};
+
+const toneQuips: Record<Tone, string[]> = {
+  shy: ["아직 어색하지만 잘 부탁해요", "저… 여기 있어도 되죠?", "처음이라 조금 긴장돼요", "조금씩 친해져요, 우리"],
+  familiar: ["이제 좀 익숙해졌어요", "이 자리가 슬슬 편해요", "제 자리 여기 맞죠?", "오늘도 같이 있어요"],
+  seasoned: [
+    "저도 이제 이 정도는 아는 짬이에요",
+    "이 시간엔 물 한 잔 하실 때죠? 제가 압니다",
+    "척하면 척이죠",
+    "회의 끝나면 피곤하실 거 알아요",
+    "말 안 해도 알아요, 커피죠?",
+  ],
+  close: ["우리 벌써 이렇게 됐네요", "오늘도 제가 옆에 있잖아요", "이제 말 안 해도 통하죠", "든든한 동료 생겼죠?", "같이 퇴근하는 기분이에요"],
+};
+
+/** From Lv.5 the pet sometimes nags like someone who has seen it all before, from Lv.8 like a colleague. */
+const reminderToneLines: Record<ReminderId, Partial<Record<Tone, string[]>>> = {
+  legs: {
+    seasoned: ["다리, 또요? 이제 눈 감고도 알아요", "다리 꼬는 타이밍, 제가 다 알아요"],
+    close: ["우리 사이에 다리 꼬는 거 다 보여요", "다리 풀어요. 동료로서 하는 말이에요"],
+  },
+  posture: {
+    seasoned: ["허리 굽은 거 여기서도 보여요", "자세 무너질 시간인 거 알아요"],
+    close: ["허리 펴요. 오래오래 같이 일해야죠", "제가 허리 담당이잖아요. 펴요"],
+  },
+  water: {
+    seasoned: ["물 마실 때 됐죠? 시계 안 봐도 알아요", "목마를 시간인 거 다 알아요"],
+    close: ["물 한 잔 같이 해요. 저도 마실게요", "우리 오늘 물 목표 채워 봐요"],
+  },
+  stretch: {
+    seasoned: ["지금쯤 어깨 뭉쳤을 거예요. 저 짬 있어요", "스트레칭 타이밍 정확하죠?"],
+    close: ["같이 기지개 켜요. 하나, 둘!", "몸 풀고 오면 제가 기다릴게요"],
+  },
+};
+
+/** half the time from Lv.5 a reminder is said in the closer tone; undefined = keep the ordinary line */
+export function reminderLine(id: string, level: number, rand: () => number = Math.random): string | undefined {
+  const lines = reminderToneLines[id as ReminderId]?.[toneOf(level)];
+  return lines && rand() < 0.5 ? pick(lines, rand) : undefined;
+}
+
+/** From Lv.7 the pet remembers: lines built from what has been recorded so far. */
+function statQuips(t: { done: Record<string, number>; streak: number }) {
+  const out: string[] = [];
+  const n = (id: string) => t.done[id] ?? 0;
+  if (n("water") >= 5) out.push(`물 마시기, 지금까지 ${n("water")}번 챙겼어요`);
+  if (n("posture") >= 5) out.push(`허리 펴기 ${n("posture")}번! 자세가 좋아지고 있어요`);
+  if (n("legs") >= 5) out.push(`다리 안 꼬기 ${n("legs")}번, 대단해요`);
+  if (n("stretch") >= 5) out.push(`스트레칭 ${n("stretch")}번 했어요. 몸이 고마워할 거예요`);
+  if (t.streak >= 2) out.push(`${t.streak}일째 잘 챙기고 있어요`);
+  return out;
+}
+
 /** Said when the app starts. Names the first event still to come today, if the calendar knows one. */
-export function greetingMessage(now: Date, firstEvent?: { title: string; start: Date }, rand: () => number = Math.random) {
+export function greetingMessage(
+  now: Date,
+  firstEvent?: { title: string; start: Date },
+  rand: () => number = Math.random,
+  level?: number,
+) {
   const h = now.getHours();
   const day = now.getDay();
-  const pool =
-    h >= 22 || h < 5
+  // with a level, now and then the greeting shows how close the pet has become
+  const pool = level !== undefined && h >= 5 && h < 22 && rand() < 0.4 ? toneGreetings[toneOf(level)] : timeGreetings(h, day);
+  const hello = pick(pool, rand);
+  if (!firstEvent) return hello;
+  const stop = /[.!?…]$/.test(hello) ? " " : ". ";
+  return `${hello}${stop}오늘 첫 일정은 ${clock(firstEvent.start)} '${shorten(firstEvent.title)}'예요`;
+}
+
+function timeGreetings(h: number, day: number) {
+  return h >= 22 || h < 5
       ? greetings.night
       : day === 0 || day === 6
         ? greetings.weekend
@@ -195,10 +272,6 @@ export function greetingMessage(now: Date, firstEvent?: { title: string; start: 
                 : h < 18
                   ? greetings.afternoon
                   : greetings.evening;
-  const hello = pick(pool, rand);
-  if (!firstEvent) return hello;
-  const stop = /[.!?…]$/.test(hello) ? " " : ". ";
-  return `${hello}${stop}오늘 첫 일정은 ${clock(firstEvent.start)} '${shorten(firstEvent.title)}'예요`;
 }
 
 /* ───────── 퇴근 ───────── */
@@ -509,6 +582,16 @@ export const settingsText = {
   tabRemind: "알림",
   tabCalendar: "일정",
   tabPet: "펫",
+  tabGrow: "성장",
+  wardrobe: (name: string) => `옷장 · ${name}`,
+  secretCount: (n: number, total: number) => `숨은 옷 ${n}/${total} · 꾸준히 챙기면 펫이 몰래 선물해요`,
+  secretHint: "숨은 옷이에요. 어떻게 열리는지는 비밀이에요",
+  itemNone: "없음",
+  resetOpen: "친밀도 초기화",
+  resetTitle: "정말 처음부터 다시 시작할까요?",
+  resetWarn: "레벨, 친밀도, 숨은 옷, 그동안의 기록이 모두 사라지고 되돌릴 수 없어요. 펫과 이름, 다른 설정은 그대로예요.",
+  resetKeep: "그만두기",
+  resetConfirm: "초기화할게요",
   tabTalk: "말 걸기",
   talkTitle: "펫이 먼저 말을 걸어요",
   moments: {
@@ -689,8 +772,75 @@ const petQuipsById: Record<string, string[]> = {
   ],
 };
 
-/** What this pet may say when poked: the shared lines plus its own. */
-export const quipsFor = (petId: string) => [...commonQuips, ...(petQuipsById[petId] ?? [])];
+/**
+ * What this pet may say when poked: the shared lines, its own, the ones of its closeness tone, and from Lv.7 lines
+ * built from the record (`totals`).
+ */
+export const quipsFor = (petId: string, level = 1, totals?: { done: Record<string, number>; streak: number }) => [
+  ...commonQuips,
+  ...(petQuipsById[petId] ?? []),
+  ...toneQuips[toneOf(level)],
+  ...(level >= 7 && totals ? statQuips(totals) : []),
+];
+
+/* ───────── 옷과 숨은 선물 ───────── */
+
+export const itemNames: Record<string, string> = {
+  tie: "넥타이",
+  bandana: "반다나",
+  beanie: "비니",
+  flower: "꽃 핀",
+  glasses: "안경",
+  cap: "야구모자",
+  headphones: "헤드폰",
+  sunglasses: "선글라스",
+  scarf: "목도리",
+  bow: "리본",
+  crown: "왕관",
+  wizard: "마법사 모자",
+  heart: "하트 안경",
+  monocle: "외알 안경",
+  medal: "금메달",
+  drop: "물방울 핀",
+  goggles: "수경",
+  book: "머리 위 책",
+  halo: "천사 링",
+  sweatband: "땀 밴드",
+  lei: "꽃목걸이",
+  laurel: "월계관",
+  chef: "요리사 모자",
+  nightcap: "수면 모자",
+  locket: "하트 목걸이",
+  badge: "사원증",
+};
+
+export const slotNames = { head: "머리", face: "얼굴", neck: "목" };
+
+/** how a locked level item is opened; secret ones are never shown locked */
+export const unlockHint = (item: { level?: number }) => `Lv.${item.level}에 열려요`;
+
+/** what the pet says when a secret (pet/titles.ts) is found, handing over its item */
+const secretLines: Record<string, string> = {
+  water10: "물 마시기 벌써 10번째예요! 선물로 물방울 핀을 옷장에 넣어 뒀어요",
+  water100: "물을 100번이나 챙겼어요! 이 정도면 수영도 하겠어요. 수경 선물이에요",
+  posture50: "허리 펴기 50번! 자세가 좋아서 책도 올릴 수 있겠어요. 선물 넣어 뒀어요",
+  legs100: "다리 안 꼬기 100번 성공! 천사 링을 드릴게요",
+  stretch50: "스트레칭 50번! 운동선수 같아요. 땀 밴드 선물이에요",
+  streak7: "일주일 내내 잘 챙겼어요! 축하의 꽃목걸이를 드려요",
+  streak30: "30일 연속이라니, 정말 대단해요! 월계관을 씌워 드릴게요",
+  roulette: "점심 룰렛 단골손님이네요! 요리사 모자 하나 드릴게요",
+  goodbye20: "퇴근 인사만 20번째예요. 푹 쉬라고 수면 모자 선물이에요",
+  petter: "벌써 500번이나 쓰다듬어 줬어요! 하트 목걸이 받아 주세요",
+  meetings: "일정 30개를 함께 버텼어요! 사원증 하나 만들어 왔어요",
+};
+const itemGotLines = ["옷장에 새 옷이 생겼어요: {x}", "{x}, 입어 볼래요? 설정 → 성장에 있어요", "새 옷 {x}! 어울릴 것 같아요"];
+
+export const secretMessage = (id: string) => secretLines[id] ?? "깜짝 선물을 옷장에 넣어 뒀어요";
+/** several items open together at Lv.5 and Lv.10, so they are announced as one line */
+export const itemGotMessage = (names: string[], rand: () => number = Math.random) =>
+  names.length === 1
+    ? pick(itemGotLines, rand).split("{x}").join(names[0])
+    : `옷장에 새 옷이 ${names.length}벌 생겼어요! 설정 → 성장에서 입혀 볼래요?`;
 
 /** `{n}` is the new level, `{name}` the pet's name; no particle follows either, so none has to match the last letter */
 const levelUpLines = [
@@ -714,6 +864,11 @@ export const sharedLines = () => [
   ...Object.values(reminderMessages).flat(),
   ...calendarLines,
   ...levelUpLines,
+  ...Object.values(toneGreetings).flat(),
+  ...Object.values(toneQuips).flat(),
+  ...Object.values(reminderToneLines).flatMap((t) => Object.values(t).flat()),
+  ...Object.values(secretLines),
+  ...itemGotLines,
   ...Object.values(leaveLines).flat(),
   ...Object.values(scheduleLines).flat(),
   ...petQuips.skipped,
@@ -722,7 +877,7 @@ export const sharedLines = () => [
   ...petQuips.found,
   ...petQuips.edgeNo,
   ...petQuips.edgeGiveUp,
-  ...quipsFor("none"),
+  ...commonQuips,
 ];
 
 /* ───────── 펫 창 ───────── */
@@ -809,6 +964,7 @@ export const devText = {
   toLevel: (n: number) => `Lv.${n} 만들기`,
   resetExp: "친밀도 0으로",
   levelUp: "레벨업 말풍선",
+  unlockAll: "옷 모두 열기",
   petSwap: "펫 바꿔 보기 (저장 안 됨)",
   states: "펫 상태 고정",
   release: "고정 해제",

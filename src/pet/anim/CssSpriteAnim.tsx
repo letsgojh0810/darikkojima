@@ -1,4 +1,6 @@
+import { ANCHORS } from "../outfit";
 import { MuteMask } from "./FrontFace";
+import { OutfitLayer } from "./Outfit";
 import type { PetAnimation } from "./types";
 import { useBlink } from "./useBlink";
 import "./CssSpriteAnim.css";
@@ -18,7 +20,7 @@ const C = {
 
 const line = { fill: "none", stroke: C.ink, strokeWidth: 2, strokeLinecap: "round" as const };
 
-export const CssSpriteAnim: PetAnimation = ({ state, muted }) => {
+export const CssSpriteAnim: PetAnimation = ({ state, muted, outfit }) => {
   const blink = useBlink(state);
 
   const asleep = state === "sleep";
@@ -80,6 +82,10 @@ export const CssSpriteAnim: PetAnimation = ({ state, muted }) => {
         <path d="M46 50 L58 43 L70 50 L70 63 L58 70 L46 63 Z" fill={C.shellDark} stroke={C.shellDark} strokeWidth="4" strokeLinejoin="round" />
         <path d="M27 66 L33 62.5 L39 66 L39 73 L33 76.5 L27 73 Z" fill={C.shellDark} stroke={C.shellDark} strokeWidth="3" strokeLinejoin="round" />
         <path d="M77 66 L83 62.5 L89 66 L89 73 L83 76.5 L77 73 Z" fill={C.shellDark} stroke={C.shellDark} strokeWidth="3" strokeLinejoin="round" />
+        {/* clothes go over the shell (which overlaps the head), moving with the head */}
+        <g transform={`translate(0 ${headY})`}>
+          <OutfitLayer outfit={outfit} a={ANCHORS.turtle} />
+        </g>
         {state === "click" && <path d="M92 14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill={C.spark} />}
       </svg>
       {asleep && <i className="zzz">z</i>}

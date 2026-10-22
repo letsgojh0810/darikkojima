@@ -1,3 +1,5 @@
+import { ANCHORS } from "../outfit";
+import { OutfitLayer } from "./Outfit";
 import { FrontFace, INK, headDy } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -8,7 +10,7 @@ const SHADE = "#E4D9CB";
 const PINK = "#FFB8C0";
 
 // White rabbit with tall ears, sitting.
-export const RabbitAnim: PetAnimation = ({ state, muted }) => {
+export const RabbitAnim: PetAnimation = ({ state, muted, outfit }) => {
   const blink = useBlink(state);
   return (
     <Sprite state={state} pet="rabbit">
@@ -34,6 +36,7 @@ export const RabbitAnim: PetAnimation = ({ state, muted }) => {
           mouthY={58}
           neutralMouth={<path d="M60 54 v2 M60 56 q-3 3 -6 1 M60 56 q3 3 6 1" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />}
         />
+        <OutfitLayer outfit={outfit} a={ANCHORS.rabbit} />
       </g>
     </Sprite>
   );

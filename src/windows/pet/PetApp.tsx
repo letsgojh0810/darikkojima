@@ -7,8 +7,12 @@ import { createMoments, leaveStatus } from "../../greetings/moments";
 import {
   calendarMessage,
   greetingMessage,
+  itemGotMessage,
+  itemNames,
   leaveMessage,
   levelUpMessage,
+  reminderLine,
+  secretMessage,
   momentMessage,
   oneOf,
   petNames,
@@ -26,7 +30,9 @@ import { LunchBubble } from "../../pet/LunchBubble";
 import { NoticeBubble } from "../../pet/NoticeBubble";
 import { addNotice, lunchTtl, nextExpiry, pruneNotices, setTtlOverride, type Notice } from "../../pet/notices";
 import { PetMenu } from "../../pet/PetMenu";
-import { award, LEVELS, levelOf, type Progress, type ProgressEvent } from "../../pet/progress";
+import { ITEMS, wearable } from "../../pet/outfit";
+import { award, emptyProgress, LEVELS, levelOf, type Progress, type ProgressEvent } from "../../pet/progress";
+import { newTitles } from "../../pet/titles";
 import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
 import { loadPetPos, loadProgress, loadSettings, savePetPos, saveProgress } from "../../store";
@@ -94,17 +100,28 @@ export function PetApp() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const progressRef = useRef<Progress | null>(null);
   const level = progress ? levelOf(progress.exp).level : 1;
-  const commit = (after: Progress) => {
+  const levelRef = useRef(level);
+  levelRef.current = level;
+  // every change goes through here: it saves, and announces a level-up, a found secret and any clothes that just opened
+  const commit = (next: Progress) => {
     const before = progressRef.current;
     if (!before) return;
+    const fresh = newTitles(next);
+    const after = fresh.length ? { ...next, titles: [...next.titles, ...fresh] } : next;
     progressRef.current = after;
     setProgress(after);
     saveProgress(after);
+    const was = levelOf(before.exp).level;
     const lv = levelOf(after.exp).level;
-    if (lv > levelOf(before.exp).level) addNote({ key: "h:levelup", kind: "hello", message: levelUpMessage(lv, nameRef.current) });
+    if (lv > was) addNote({ key: "h:levelup", kind: "hello", message: levelUpMessage(lv, nameRef.current) });
+    // a secret's line already hands over its item, so only the level items are announced, as one line
+    for (const id of fresh) addNote({ key: `h:secret:${id}`, kind: "hello", message: secretMessage(id) });
+    const opened = ITEMS.filter((it) => it.level && it.level > was && it.level <= lv);
+    if (opened.length) addNote({ key: "h:items", kind: "hello", message: itemGotMessage(opened.map((it) => itemNames[it.id] ?? it.id)) });
   };
-  const gain = (e: ProgressEvent, count = 1) => {
-    if (progressRef.current) commit(award(progressRef.current, e, new Date(), count));
+  /** `id`: the reminder answered, for "done" */
+  const gain = (e: ProgressEvent, id?: string) => {
+    if (progressRef.current) commit(award(progressRef.current, e, new Date(), id));
   };
 
   // scheduler: needs settings first
@@ -133,22 +150,27 @@ export function PetApp() {
         getSettings: () => settings!,
         getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: cal?.inMeeting() ?? false }),
         onFire: (id, message) => {
-          addNote({ key: `r:${id}`, kind: "reminder", id, message });
+          // from Lv.5 the pet sometimes says it in its closer tone
+          addNote({ key: `r:${id}`, kind: "reminder", id, message: reminderLine(id, levelRef.current) ?? message });
           gain("fired");
         },
       });
       cal = createCalendar({
         getSettings: () => settings!,
         canAlert: () => s!.canNotify("calendar"),
-        onAlert: (message) => addNote({ key: `c:${message}`, kind: "calendar", message }),
+        onAlert: (message) => {
+          addNote({ key: `c:${message}`, kind: "calendar", message });
+          gain("calendar");
+        },
       });
       moments = createMoments({
         getSettings: () => settings!,
         canShow: () => s!.canNotify("greeting"),
-        onMoment: (id) =>
-          id === "lunch"
-            ? showLunch()
-            : addNote({ key: `h:${id}`, kind: "hello", message: momentMessage(id, new Date().getDay() === 5) }),
+        onMoment: (id) => {
+          if (id === "lunch") return showLunch();
+          addNote({ key: `h:${id}`, kind: "hello", message: momentMessage(id, new Date().getDay() === 5) });
+          if (id === "goodbye") gain("goodbye");
+        },
       });
       scheduler.current = s;
       calRef.current = cal;
@@ -164,13 +186,24 @@ export function PetApp() {
         Promise.race([firstFetch, new Promise((done) => setTimeout(done, 5000))]).then(async () => {
           if (cancelled) return;
           if (await s!.canNotify("greeting")) {
-            addNote({ key: "h:greeting", kind: "hello", message: greetingMessage(new Date(), cal!.nextEventToday()) });
+            addNote({
+              key: "h:greeting",
+              kind: "hello",
+              message: greetingMessage(new Date(), cal!.nextEventToday(), Math.random, levelRef.current),
+            });
             gain("greet");
           }
         });
       }
     });
     const unlistenQuiet = listen("quiet-toggle", () => setQuiet(!quietRef.current));
+    // "친밀도 초기화" in the settings window: start over; nothing is announced
+    const unlistenReset = listen("progress-reset", () => {
+      const p = emptyProgress(new Date());
+      progressRef.current = p;
+      setProgress(p);
+      saveProgress(p);
+    });
     const unlistenSettings = listen("settings-changed", async () => {
       settings = await loadSettings();
       settingsRef.current = settings;
@@ -235,11 +268,18 @@ export function PetApp() {
               setForced(c.state);
               break;
             case "quip":
-              say(oneOf(quipsFor(petIdRef.current)));
+              say(oneOf(quipsFor(petIdRef.current, levelRef.current, progressRef.current?.totals)));
               break;
             case "theme":
               applyTheme(c.mode);
               break;
+            case "unlockAll": {
+              const p = progressRef.current;
+              if (!p) break;
+              const done = { ...p.totals.done, water: 100, posture: 50, legs: 100, stretch: 50 };
+              commit({ ...p, exp: LEVELS[LEVELS.length - 1], totals: { ...p.totals, done, streak: 30, spinDays: 10, goodbyes: 20, clicks: 500, calendar: 30 } });
+              break;
+            }
             case "exp":
               if (progressRef.current) commit({ ...progressRef.current, exp: progressRef.current.exp + c.amount });
               break;
@@ -263,6 +303,7 @@ export function PetApp() {
       unlistenDebug?.then((f) => f());
       unlistenPreview.then((f) => f());
       unlistenQuiet.then((f) => f());
+      unlistenReset.then((f) => f());
       unlistenSettings.then((f) => f());
     };
   }, []);
@@ -419,7 +460,8 @@ export function PetApp() {
   const answered = () => setActivity((n) => n + 1);
   // only "했어요" on a reminder earns closeness; snoozing or skipping just closes
   const done = (key: string) => {
-    if (notices.find((n) => n.key === key)?.kind === "reminder") gain("done");
+    const n = notices.find((x) => x.key === key);
+    if (n?.kind === "reminder") gain("done", n.id);
     setNotices((l) => l.filter((n) => n.key !== key));
     answered();
   };
@@ -428,8 +470,7 @@ export function PetApp() {
     answered();
   };
   const doneAll = () => {
-    const reminders = notices.filter((n) => n.kind === "reminder").length;
-    if (reminders) gain("done", reminders);
+    for (const n of notices) if (n.kind === "reminder") gain("done", n.id);
     clearAll();
   };
   const snoozeAll = () => {
@@ -456,7 +497,7 @@ export function PetApp() {
     setClicked(true);
     setClickCount((n) => n + 1); // remounts the sprite so a second click replays the hop
     clickTimer.current = setTimeout(() => setClicked(false), 500);
-    say(oneOf(quipsFor(petId)));
+    say(oneOf(quipsFor(petId, level, progress?.totals)));
     gain("click");
   };
 
@@ -565,7 +606,7 @@ export function PetApp() {
           openMenu();
         }}
       >
-        <Anim key={clickCount} state={state} muted={quiet} />
+        <Anim key={clickCount} state={state} muted={quiet} outfit={wearable(petProfiles[petId]?.outfit, level, progress?.titles ?? [])} />
       </div>
       {/* keyed by level so the tag pops once when the level goes up */}
       {petLabel !== "off" && progress && (
