@@ -4,6 +4,12 @@ import type { CalEvent } from "./CalendarSource";
 // RRULE iteration starts at DTSTART, so a years-old daily event needs thousands of steps to reach today.
 const MAX_STEPS = 20_000;
 
+/**
+ * True when the text starts like a calendar feed. A wrong address often returns a web page instead
+ * (a login or error page), which the parser would choke on with a message nobody can act on.
+ */
+export const isIcs = (text: string) => /^﻿?\s*BEGIN:VCALENDAR/i.test(text);
+
 /** Timed events overlapping [from, to], recurrences expanded. All-day and cancelled events are skipped. */
 export function parseEvents(ics: string, from: Date, to: Date): CalEvent[] {
   const root = new ICAL.Component(ICAL.parse(ics));

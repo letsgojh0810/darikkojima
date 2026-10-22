@@ -1,3 +1,6 @@
+import { useState } from "react";
+import type { CalEvent } from "../../calendar/CalendarSource";
+import { IcsSource } from "../../calendar/IcsSource";
 import { sendDebug } from "../../debug";
 import { momentsOf } from "../../greetings/moments";
 import { devText as d, reminderLabels } from "../../messages/ko";
@@ -24,8 +27,28 @@ const status = (m: { at: Date; until: Date }) => {
 };
 
 /** Dev-only: plays the pet's behaviours on demand so they can be checked without waiting for the clock. */
+const DAY = 24 * 60 * 60_000;
+const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
 export function DevPanel({ s }: { s: Settings }) {
   const schedule = momentsOf(new Date(), s);
+  const [events, setEvents] = useState<CalEvent[]>();
+  const [error, setError] = useState<string>();
+
+  // reads the feeds the same way the app does, but from the draft addresses, so an unsaved address can be tried
+  const load = async () => {
+    setError(undefined);
+    try {
+      const now = Date.now();
+      const lists = await Promise.all(s.icsUrls.map((u) => new IcsSource(u).getEvents(new Date(now - DAY), new Date(now + 2 * DAY))));
+      setEvents(lists.flat().sort((a, b) => a.start.getTime() - b.start.getTime()));
+    } catch (e) {
+      setEvents(undefined);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  // a past event is replayed as "in 10 minutes" so the wording can still be checked
+  const minutesTo = (e: CalEvent) => (e.start.getTime() > Date.now() ? Math.max(1, Math.round((e.start.getTime() - Date.now()) / 60_000)) : 10);
   return (
     <div className="dev">
       <p className="desc dev-hint">{d.hint}</p>
@@ -63,6 +86,31 @@ export function DevPanel({ s }: { s: Settings }) {
             <button className="remove" onClick={() => sendDebug({ type: "state", state: null })}>{d.release}</button>
             <button className="secondary" onClick={() => sendDebug({ type: "quip" })}>{d.quip}</button>
           </Buttons>
+
+          <section>
+            <h2>{d.myCalendar}</h2>
+            <div className="group">
+              {s.icsUrls.length === 0 ? (
+                <p className="desc dev-hint">{d.noUrls}</p>
+              ) : (
+                <div className="row">
+                  <button className="primary" onClick={load}>{d.load}</button>
+                </div>
+              )}
+              {error && <p className="err">{d.loadFail + error}</p>}
+              {events?.length === 0 && <p className="desc dev-hint">{d.noEvents}</p>}
+              {events?.map((e) => (
+                <div className="row" key={`${e.uid}@${e.start.getTime()}`}>
+                  <div className="text">
+                    <div className="label ellipsis">{e.title}</div>
+                    <div className="desc">{`${e.start.getMonth() + 1}/${e.start.getDate()} ${hhmm(e.start)}`}</div>
+                  </div>
+                  <button className="secondary" onClick={() => sendDebug({ type: "calendar", title: e.title, min: minutesTo(e) })}>{d.sendAlert}</button>
+                  <button className="secondary" onClick={() => sendDebug({ type: "greeting", event: { title: e.title, start: e.start.getTime() } })}>{d.sendHello}</button>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <section>
             <h2>{d.schedule}</h2>

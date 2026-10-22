@@ -132,7 +132,12 @@ export function PetApp() {
               addNote({
                 key: "h:greeting",
                 kind: "hello",
-                message: greetingMessage(new Date(), cal?.nextEventToday() ?? { title: "주간회의", start: new Date(Date.now() + 3_600_000) }),
+                message: greetingMessage(
+                  new Date(),
+                  c.event
+                    ? { title: c.event.title, start: new Date(c.event.start) }
+                    : (cal?.nextEventToday() ?? { title: "주간회의", start: new Date(Date.now() + 3_600_000) }),
+                ),
               });
               break;
             case "lunch":
@@ -145,7 +150,7 @@ export function PetApp() {
               addNote({ key: `r:${c.id}`, kind: "reminder", id: c.id, message: oneOf(reminderMessages[c.id as ReminderId]) });
               break;
             case "calendar":
-              addNote({ key: "c:test", kind: "calendar", message: calendarMessage("주간회의", 10) });
+              addNote({ key: "c:test", kind: "calendar", message: calendarMessage(c.title ?? "주간회의", c.min ?? 10) });
               break;
             case "pile":
               // four at once: the bubble keeps three rows and the oldest reminder is pushed out

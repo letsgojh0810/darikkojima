@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { normalizeIcsUrl } from "../../calendar/url";
+import { isGoogleCalendarPage, normalizeIcsUrl } from "../../calendar/url";
 import { dayLabels, defaultLunchMenus, devText, petNames, reminderLabels, settingsText as t } from "../../messages/ko";
 import { DevPanel } from "./DevPanel";
 import { loadSettings, saveSettings } from "../../store";
@@ -92,7 +92,7 @@ export function SettingsApp() {
   const [saved, setSaved] = useState<{ s: Settings; auto: boolean }>();
   const [auto, setAuto] = useState(false);
   const [url, setUrl] = useState("");
-  const [badUrl, setBadUrl] = useState(false);
+  const [badUrl, setBadUrl] = useState<string>();
   const [newText, setNewText] = useState("");
   const [newMenu, setNewMenu] = useState("");
   const [tab, setTab] = useState<TabId>("general");
@@ -145,7 +145,8 @@ export function SettingsApp() {
 
   const save = async () => {
     // text typed but not yet added would be lost silently, so take it along
-    const pending = normalizeIcsUrl(url);
+    const typed = normalizeIcsUrl(url);
+    const pending = typed && !isGoogleCalendarPage(typed) ? typed : null;
     const next = { ...s, custom: newCustom(), lunchMenus: withMenu(s.lunchMenus), icsUrls: pending && !s.icsUrls.includes(pending) ? [...s.icsUrls, pending] : s.icsUrls };
     await saveSettings(next);
     if (auto !== saved.auto) await (auto ? enable() : disable());
@@ -157,8 +158,8 @@ export function SettingsApp() {
 
   const addUrl = () => {
     const u = normalizeIcsUrl(url);
-    setBadUrl(!u);
-    if (!u) return;
+    setBadUrl(!u ? t.badUrl : isGoogleCalendarPage(u) ? t.googlePage : undefined);
+    if (!u || isGoogleCalendarPage(u)) return;
     if (!s.icsUrls.includes(u)) update({ ...s, icsUrls: [...s.icsUrls, u] });
     setUrl("");
   };
@@ -251,6 +252,22 @@ export function SettingsApp() {
 
           <Group title={t.calendar}>
             <Row desc={t.calendarHint} />
+            <details className="guide">
+              <summary>{t.guideTitle}</summary>
+              <h3>{t.guideGoogle}</h3>
+              <ol>
+                {t.guideGoogleSteps.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ol>
+              <h3>{t.guideOutlook}</h3>
+              <ol>
+                {t.guideOutlookSteps.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ol>
+              <p>{t.guideNote}</p>
+            </details>
             {s.icsUrls.map((u) => (
               // private ICS links are secret tokens: show only the host, the full URL stays in the tooltip
               <Row key={u} label={`${new URL(u).host} …`}>
@@ -271,7 +288,7 @@ export function SettingsApp() {
                 {t.add}
               </button>
             </div>
-            {badUrl && <p className="err">{t.badUrl}</p>}
+            {badUrl && <p className="err">{badUrl}</p>}
             <Row label={t.lead}>
               <span className="unit">
                 <NumberField value={s.calendarLeadMin} min={1} max={120} onCommit={(n) => update({ ...s, calendarLeadMin: n })} />

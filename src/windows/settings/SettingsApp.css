@@ -15,6 +15,14 @@ h1 { margin: 0 4px 4px; font-size: 20px; line-height: 28px; font-weight: 700; }
 .tab[aria-selected="true"] { border-bottom-color: var(--blue); color: var(--text-1); }
 .tab:active { transform: none; }
 
+/* "where do I find the address": folded by default so the card stays short */
+.guide { padding: 2px 14px 8px; color: var(--text-2); font: 400 13px/19px var(--font); }
+.guide summary { width: fit-content; color: var(--blue); font-weight: 600; cursor: pointer; }
+.guide summary:focus-visible { outline: 0; box-shadow: var(--focus-ring); border-radius: var(--r-xs); }
+.guide h3 { margin: 10px 0 2px; color: var(--text-1); font: 600 13px/19px var(--font); }
+.guide ol { margin: 0; padding-left: 20px; }
+.guide p { margin: 8px 0 0; color: var(--text-3); }
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 230px; padding: 8px 14px; overflow-y: auto; }
 .chip { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 4px 0 10px; border-radius: var(--r-pill); background: var(--surface-sub); color: var(--text-2); font: 500 13px/1 var(--font); }
 .chip button { width: 20px; height: 20px; padding: 0; border-radius: var(--r-pill); background: none; color: var(--text-3); line-height: 1; }

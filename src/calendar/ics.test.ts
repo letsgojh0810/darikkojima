@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { parseEvents } from "./ics";
+import { isIcs, parseEvents } from "./ics";
+
+describe("isIcs", () => {
+  it("accepts a feed, with or without a byte order mark or leading blank lines", () => {
+    expect(isIcs("BEGIN:VCALENDAR\r\nVERSION:2.0")).toBe(true);
+    expect(isIcs("﻿BEGIN:VCALENDAR")).toBe(true);
+    expect(isIcs("\r\n  begin:vcalendar")).toBe(true);
+  });
+
+  it("rejects the web pages a wrong address returns", () => {
+    expect(isIcs("<!doctype html><html><head>")).toBe(false);
+    expect(isIcs("")).toBe(false);
+    expect(isIcs("404 Not Found")).toBe(false);
+  });
+});
 
 const wrap = (...events: string[]) =>
   ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//test//EN", ...events, "END:VCALENDAR"].join("\r\n");

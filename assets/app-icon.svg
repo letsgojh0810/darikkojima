@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- source of every app icon: `npx tauri icon assets/app-icon.svg` (see README) -->
+  <rect width="512" height="512" rx="112" fill="#3182F6"/>
+  <!-- ears -->
+  <path d="M120 236 L142 104 L252 168 Z" fill="#F5B97A" stroke="#F5B97A" stroke-width="26" stroke-linejoin="round"/>
+  <path d="M392 236 L370 104 L260 168 Z" fill="#F5B97A" stroke="#F5B97A" stroke-width="26" stroke-linejoin="round"/>
+  <path d="M152 204 L158 142 L210 174 Z" fill="#FF9F8E"/>
+  <path d="M360 204 L354 142 L302 174 Z" fill="#FF9F8E"/>
+  <!-- head -->
+  <ellipse cx="256" cy="292" rx="172" ry="150" fill="#F5B97A"/>
+  <path d="M256 164 v52 M198 176 l9 40 M314 176 l-9 40" fill="none" stroke="#E8A04A" stroke-width="20" stroke-linecap="round"/>
+  <!-- muzzle and cheeks -->
+  <ellipse cx="256" cy="344" rx="72" ry="54" fill="#FFE3C2"/>
+  <circle cx="126" cy="338" r="26" fill="#FF9F8E" opacity="0.7"/>
+  <circle cx="386" cy="338" r="26" fill="#FF9F8E" opacity="0.7"/>
+  <!-- eyes -->
+  <ellipse cx="186" cy="288" rx="22" ry="30" fill="#191F28"/>
+  <ellipse cx="326" cy="288" rx="22" ry="30" fill="#191F28"/>
+  <circle cx="194" cy="276" r="8" fill="#fff"/>
+  <circle cx="334" cy="276" r="8" fill="#fff"/>
+  <!-- nose and mouth -->
+  <path d="M236 324 L276 324 L256 350 Z" fill="#FF8FA0" stroke="#FF8FA0" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M256 352 q-22 30 -50 14 M256 352 q22 30 50 14" fill="none" stroke="#191F28" stroke-width="11" stroke-linecap="round"/>
+</svg>
