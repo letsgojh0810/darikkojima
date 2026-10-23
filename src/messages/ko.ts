@@ -917,6 +917,14 @@ export const itemNames: Record<string, string> = {
   locket: "하트 목걸이",
   badge: "사원증",
   airpods: "에어팟",
+  cheeks: "하트 볼 스티커",
+  bandage: "반창고",
+  bell: "방울 목걸이",
+  eyepatch: "안대",
+  bowtie: "나비넥타이",
+  partyhat: "고깔모자",
+  stars: "별 안경",
+  pearls: "진주 목걸이",
   headset: "회의용 헤드셋",
 };
 

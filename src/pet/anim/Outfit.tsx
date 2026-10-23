@@ -124,6 +124,14 @@ const HEAD: Record<string, ReactNode> = {
       <path d="M-8 -4 V5 M0 -4 V5 M8 -4 V5" stroke="#E5E8EB" strokeWidth="1.2" />
     </>
   ),
+  partyhat: (
+    <g transform="translate(5 2) rotate(12)">
+      <path d="M-12 4 L0 -24 L12 4 Z" fill="#3182F6" />
+      <path d="M-8 -4 L8 -4 M-4.5 -13 L4.5 -13" stroke={GOLD} strokeWidth="2.4" strokeLinecap="round" />
+      <circle cy="-25" r="3.6" fill="#FF8FA0" />
+      <path d="M-13 4 Q0 9 13 4" fill="none" stroke="#1B64DA" strokeWidth="2.2" strokeLinecap="round" />
+    </g>
+  ),
   nightcap: (
     <>
       <path d="M-21 6 C-19 -12 10 -18 25 -4 C15 -5 13 -1 21 6 Z" fill="#7B8CDE" />
@@ -182,6 +190,29 @@ const NECK: Record<string, ReactNode> = {
       <path d="M0 15 C-6 10 -5 6 -2.5 6 C-1 6 0 7.5 0 7.5 C0 7.5 1 6 2.5 6 C5 6 6 10 0 15 Z" fill="#F04452" />
     </>
   ),
+  bell: (
+    <>
+      <path d="M-17 0 Q0 7 17 0" fill="none" stroke="#F04452" strokeWidth="4" strokeLinecap="round" />
+      <circle cy="9" r="4.6" fill={GOLD} stroke={GOLD_EDGE} strokeWidth="1.2" />
+      <path d="M-2.4 10.5 H2.4" stroke={GOLD_EDGE} strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="-1.5" cy="7.5" r="1" fill="#fff" opacity="0.8" />
+    </>
+  ),
+  bowtie: (
+    <>
+      <path d="M0 3 L-10 -3 L-10 9 Z M0 3 L10 -3 L10 9 Z" fill={INK} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+      <rect x="-2.6" y="0.5" width="5.2" height="5" rx="1.5" fill="#4E5968" />
+    </>
+  ),
+  pearls: (
+    <>
+      {along(9, (i) => {
+        const x = -16 + i * 4;
+        return <circle key={i} cx={x} cy={x ** 2 / 45 + 1} r="2.3" fill="#FFFDF8" stroke="#D1D6DB" strokeWidth="0.8" />;
+      })}
+      <circle cy="7" r="3" fill="#FFFDF8" stroke="#D1D6DB" strokeWidth="0.8" />
+    </>
+  ),
   badge: (
     <>
       <path d="M-12 0 L-3 11 M12 0 L3 11" stroke="#3182F6" strokeWidth="2" />
@@ -233,11 +264,50 @@ const SIDES: Record<string, (a: Anchors) => ReactNode> = {
 const heartAt = (x: number, y: number, r: number) =>
   `M${x} ${y + r} C${x - 1.7 * r} ${y}, ${x - r} ${y - 1.2 * r}, ${x} ${y - 0.35 * r} C${x + r} ${y - 1.2 * r}, ${x + 1.7 * r} ${y}, ${x} ${y + r} Z`;
 
+/** five-pointed star centred on (x, y), r the outer radius */
+const starAt = (x: number, y: number, r: number) =>
+  `M${along(10, (i) => {
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    const d = i % 2 ? r * 0.45 : r;
+    return `${(x + d * Math.cos(a)).toFixed(2)} ${(y + d * Math.sin(a)).toFixed(2)}`;
+  }).join(" L")} Z`;
+
+/** face pieces that are not glasses: drawn from the eyes too, cheeks sitting below and outside them */
+const FACE_EXTRAS: Record<string, (a: Anchors) => ReactNode> = {
+  cheeks: ({ eyes: [l, r], size: k }) => (
+    <>
+      <path d={heartAt(l.x - 9 * k, l.y + 9 * k, 3.2 * k)} fill="#FF6F86" />
+      <path d={heartAt(r.x + 9 * k, r.y + 9 * k, 3.2 * k)} fill="#FF6F86" />
+    </>
+  ),
+  bandage: ({ eyes: [, r], size: k }) => (
+    <g transform={`translate(${r.x + 9 * k} ${r.y + 9 * k}) rotate(-28) scale(${k})`}>
+      <rect x="-7" y="-2.6" width="14" height="5.2" rx="2.6" fill="#F7D3AE" stroke="#E2B07E" strokeWidth="0.8" />
+      <rect x="-2.4" y="-2.6" width="4.8" height="5.2" fill="#EEC08F" />
+    </g>
+  ),
+  eyepatch: ({ eyes: [l, r], size: k }) => (
+    <>
+      <path d={`M${l.x - 9 * k} ${l.y - 10 * k} L${l.x + 2 * k} ${l.y} M${l.x} ${l.y - 2 * k} Q${(l.x + r.x) / 2} ${l.y - 13 * k} ${r.x + 13 * k} ${r.y - 9 * k}`} fill="none" stroke={INK} strokeWidth={1.4 * k} />
+      <ellipse cx={l.x} cy={l.y} rx={6 * k} ry={5.2 * k} fill={INK} />
+    </>
+  ),
+  stars: ({ eyes, size: k }) => (
+    <>
+      {eyes.map((e, i) => (
+        <path key={i} d={starAt(e.x, e.y, 8.5 * k)} fill="rgba(255,214,107,0.55)" stroke={GOLD_EDGE} strokeWidth={1.4 * k} strokeLinejoin="round" />
+      ))}
+      <path d={`M${eyes[0].x + 6 * k} ${eyes[0].y - 1 * k} Q${(eyes[0].x + eyes[1].x) / 2} ${eyes[0].y - 4 * k} ${eyes[1].x - 6 * k} ${eyes[1].y - 1 * k}`} fill="none" stroke={GOLD_EDGE} strokeWidth={1.4 * k} />
+    </>
+  ),
+};
+
 /** face pieces need the eyes: one lens per eye and a bridge between them */
 function Face({ id, a }: { id: string; a: Anchors }) {
   const r = 6.5 * a.size;
   const w = 1.8 * a.size;
   const [e1, e2] = a.eyes;
+  if (FACE_EXTRAS[id]) return <>{FACE_EXTRAS[id](a)}</>;
   if (id === "monocle")
     return (
       <>
