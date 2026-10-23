@@ -9,8 +9,19 @@ fn is_busy(state: i32) -> bool {
 #[cfg(windows)]
 #[tauri::command]
 pub fn is_fullscreen_busy() -> bool {
+    busy()
+}
+
+/// The same check for Rust callers (the always-on-top keeper in lib.rs).
+#[cfg(windows)]
+pub fn busy() -> bool {
     use windows::Win32::UI::Shell::SHQueryUserNotificationState;
     unsafe { SHQueryUserNotificationState().map(|s| is_busy(s.0)).unwrap_or(false) }
+}
+
+#[cfg(not(windows))]
+pub fn busy() -> bool {
+    false
 }
 
 /// shortcut: no fullscreen detection on macOS yet, so the pet may speak during a fullscreen app there; add it with
@@ -18,7 +29,7 @@ pub fn is_fullscreen_busy() -> bool {
 #[cfg(not(windows))]
 #[tauri::command]
 pub fn is_fullscreen_busy() -> bool {
-    false
+    busy()
 }
 
 #[cfg(all(test, windows))]

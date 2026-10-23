@@ -1,5 +1,6 @@
 mod fullscreen;
 mod idle;
+mod topmost;
 mod tray;
 
 use std::sync::Mutex;
@@ -27,14 +28,25 @@ fn quit_app(app: tauri::AppHandle) {
 
 // Window-wide ignore is the only click-through primitive Tauri offers, so poll the cursor
 // and flip it. shortcut: fixed 100ms poll (40ms cost ~1.4% of a core); skipped while the pet is hidden.
+//
+// The same loop keeps the pet on top: another topmost window (a browser's fullscreen video, a screen-share bar…)
+// can push it down, and Windows never lifts it back on its own, so it stayed behind the browser until touched.
+// Every 2s it is raised again (src/topmost.rs: a z-order change only, no focus is taken), except while something is
+// fullscreen, so a slide show or a game is never covered.
+const KEEP_ON_TOP_EVERY: u32 = 20; // polls of 100ms
 fn spawn_click_through_poll(app: tauri::AppHandle) {
     std::thread::spawn(move || {
         let mut ignoring = None;
+        let mut polls: u32 = 0;
         loop {
             std::thread::sleep(Duration::from_millis(100));
             let Some(win) = app.get_webview_window("main") else { continue };
             if !win.is_visible().unwrap_or(true) {
                 continue;
+            }
+            polls = polls.wrapping_add(1);
+            if polls % KEEP_ON_TOP_EVERY == 0 && !fullscreen::busy() {
+                topmost::raise(&win);
             }
             let (Ok(cur), Ok(pos), Ok(scale)) =
                 (win.cursor_position(), win.outer_position(), win.scale_factor())
