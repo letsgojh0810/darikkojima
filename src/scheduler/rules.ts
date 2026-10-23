@@ -10,11 +10,13 @@ export interface RuleContext {
   kind: "reminder" | "calendar" | "greeting";
   fullscreen: boolean;
   inMeeting: boolean;
+  /** no keyboard or mouse input for a while (or the screen is locked): nobody is there to be told anything */
+  away?: boolean;
   /** epoch ms until which "조용히 하기" holds everything back (Infinity while the switch is on) */
   quietUntil: number | null;
 }
 
-export type BlockReason = "quiet" | "fullscreen" | "off-hours" | "lunch" | "meeting";
+export type BlockReason = "quiet" | "away" | "fullscreen" | "off-hours" | "lunch" | "meeting";
 
 const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);
@@ -25,6 +27,7 @@ const within = (t: number, start: string, end: string) => t >= minutes(start) &&
 
 export function blockReason(c: RuleContext): BlockReason | null {
   if (c.quietUntil !== null && c.now.getTime() < c.quietUntil) return "quiet";
+  if (c.away) return "away";
   if (c.fullscreen) return "fullscreen";
   if (c.kind === "greeting") return null;
   const { workHours, lunch } = c.settings;

@@ -2,7 +2,7 @@ import { reminderMessages } from "../messages/ko";
 import type { ReminderId, Settings } from "../store/settings";
 import { blockReason, type RuleContext } from "./rules";
 
-type Env = Pick<RuleContext, "fullscreen" | "inMeeting">;
+type Env = Pick<RuleContext, "fullscreen" | "inMeeting" | "away">;
 
 export interface SchedulerDeps {
   getSettings(): Settings;
@@ -27,6 +27,7 @@ export function createScheduler(d: SchedulerDeps) {
   const skipped = new Set<string>();
   let quietUntil: number | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let wasAway = false;
 
   /** enabled built-in and custom reminders, one shape for both */
   const enabled = (): Active[] => {
@@ -55,6 +56,14 @@ export function createScheduler(d: SchedulerDeps) {
     const settings = d.getSettings();
     const env = await d.getEnv();
     const now = Date.now();
+    // back at the desk: every reminder starts its interval over, instead of all the overdue ones arriving at once
+    if (wasAway && !env.away) {
+      wasAway = false;
+      for (const r of enabled()) if (!skipped.has(r.id)) due.set(r.id, now + r.intervalMin * MIN);
+      arm();
+      return;
+    }
+    if (env.away) wasAway = true;
     for (const r of enabled()) {
       if ((due.get(r.id) ?? Infinity) > now) continue;
       skipped.delete(r.id);

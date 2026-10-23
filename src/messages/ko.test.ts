@@ -11,8 +11,10 @@ import {
   momentMessage,
   quipsFor,
   reminderLine,
+  nextWeek,
   scheduleMessage,
   sharedLines,
+  weekMessage,
 } from "./ko";
 
 describe("shared lines", () => {
@@ -58,6 +60,25 @@ describe("asking the pet", () => {
     expect(leaveMessage({ kind: "working", min: 120 }, first)).toBe("퇴근까지 2시간 남았어요");
     expect(leaveMessage({ kind: "working", min: 7 }, first)).toBe("퇴근까지 7분 남았어요");
     expect(leaveMessage({ kind: "after" }, first)).not.toContain("{d}");
+  });
+
+  it("next week runs Monday to Monday, from any day of this week (weekends included)", () => {
+    const day = (d: number) => new Date(`2026-10-${d}T15:00:00`); // 19 = Mon … 25 = Sun
+    for (const d of [19, 21, 24, 25]) {
+      const [from, to] = nextWeek(day(d));
+      expect([from.getDate(), from.getDay(), from.getHours(), to.getDate()]).toEqual([26, 1, 0, 2]);
+    }
+  });
+
+  it("lists next week's events a line each, with the rest counted", () => {
+    const at = (d: number, h: number) => new Date(2026, 9, d, h, 30);
+    expect(weekMessage([], true, () => 0)).toContain("다음 주");
+    expect(weekMessage([], false)).toContain("일정 탭");
+    expect(weekMessage([{ title: "주간회의", start: at(26, 10) }], true)).toBe("다음 주 일정은 1개예요\n월 10시 30분 주간회의");
+    const many = Array.from({ length: 8 }, (_, i) => ({ title: `회의${i}`, start: at(26 + (i % 5), 9 + i) }));
+    const msg = weekMessage(many, true);
+    expect(msg.split("\n")).toHaveLength(1 + 6 + 1);
+    expect(msg).toContain("외 2개");
   });
 
   it("names the next event of the day, or says there is none / no calendar", () => {

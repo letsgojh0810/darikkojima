@@ -31,6 +31,10 @@ describe("blockReason for greetings", () => {
 describe("blockReason", () => {
   it("allows during work hours", () => expect(blockReason(ctx())).toBeNull());
 
+  it("holds everything while the user is away, calendar alerts and greetings too", () => {
+    for (const kind of ["reminder", "calendar", "greeting"] as const) expect(blockReason(ctx({ kind, away: true }))).toBe("away");
+  });
+
   it("blocks outside work hours, boundaries inclusive start / exclusive end", () => {
     expect(blockReason(ctx({ now: at(20, "08:59") }))).toBe("off-hours");
     expect(blockReason(ctx({ now: at(20, "09:00") }))).toBeNull();

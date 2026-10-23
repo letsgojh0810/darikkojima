@@ -40,7 +40,7 @@
 .notice { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
 .notice::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .notice + .notice { border-top: 1px solid var(--line); }
-.notice span { flex: 1; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+.notice span { flex: 1; min-width: 0; white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
 .notice.pinned span { font-weight: 700; }
 .notice button {
   flex: none;
@@ -56,7 +56,8 @@
 .notice button:hover { background: color-mix(in srgb, var(--accent-weak), var(--accent) 12%); }
 .bubble.stack .bubble-ok { margin-top: 10px; }
 
-.bubble p { margin: 0 0 14px; word-break: keep-all; overflow-wrap: anywhere; }
+/* pre-line: a list answer ("다음 주 일정") keeps one event per line */
+.bubble p { margin: 0 0 14px; white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
 
 .bubble-ok {
   display: block;

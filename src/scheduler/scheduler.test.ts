@@ -103,4 +103,21 @@ describe("scheduler", () => {
     expect(fired.length).toBeGreaterThan(0);
     s.stop();
   });
+
+  it("says nothing while away, and on return starts the interval over instead of firing what is overdue", async () => {
+    vi.setSystemTime(new Date("2026-10-20T10:00:00"));
+    const env = { fullscreen: false, inMeeting: false, away: false };
+    const fired: string[] = [];
+    const s = createScheduler({ getSettings: () => only("water", 10), getEnv: () => env, onFire: (id) => fired.push(id) });
+    s.start();
+    env.away = true;
+    await vi.advanceTimersByTimeAsync(40 * MIN);
+    expect(fired).toEqual([]);
+    env.away = false;
+    await vi.advanceTimersByTimeAsync(2 * MIN); // the next check notices the return
+    expect(fired).toEqual([]);
+    await vi.advanceTimersByTimeAsync(10 * MIN);
+    expect(fired).toEqual(["water"]);
+    s.stop();
+  });
 });

@@ -23,8 +23,10 @@ import {
   quipsFor,
   reminderMessages,
   scheduleMessage,
+  nextWeek,
+  weekMessage,
 } from "../../messages/ko";
-import { isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
+import { idleSeconds, isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
 import { pets } from "../../pet/anim/pets";
 import type { PetState } from "../../pet/anim/types";
 import { bringOnScreen, FORCE_WINDOW_MS, TOO_HIDDEN, visibleFraction, type Rect } from "../../pet/edges";
@@ -44,6 +46,11 @@ import "../../tokens.css";
 import "./PetApp.css";
 
 const GREET_GAP = 30 * 60_000; // restarting the app over and over does not greet over and over
+/**
+ * no keyboard or mouse input for this long means the desk is empty: nothing is said, and the reminders start over on
+ * return. Long enough not to fire while reading or listening in a call.
+ */
+const AWAY_AFTER_SEC = 10 * 60;
 /** minutes between two "심심하네요" */
 const CHATTER_MIN = 35;
 const CHATTER_MAX = 80;
@@ -177,7 +184,11 @@ export function PetApp() {
       });
       s = createScheduler({
         getSettings: () => settings!,
-        getEnv: async () => ({ fullscreen: await isFullscreenBusy(), inMeeting: cal?.inMeeting() ?? false }),
+        getEnv: async () => ({
+          fullscreen: await isFullscreenBusy(),
+          inMeeting: cal?.inMeeting() ?? false,
+          away: (await idleSeconds()) >= AWAY_AFTER_SEC,
+        }),
         onFire: (id, message) => {
           // from Lv.5 the pet sometimes says it in its closer tone
           addNote({ key: `r:${id}`, kind: "reminder", id, message: reminderLine(id, levelRef.current) ?? message });
@@ -607,6 +618,15 @@ export function PetApp() {
                       key: "h:ask-schedule",
                       kind: "hello",
                       message: scheduleMessage(calRef.current?.eventsLeftToday() ?? [], (settingsRef.current?.icsUrls.length ?? 0) > 0),
+                    }),
+                },
+                {
+                  label: petMenuText.week,
+                  onSelect: () =>
+                    addNote({
+                      key: "h:ask-week",
+                      kind: "hello",
+                      message: weekMessage(calRef.current?.eventsBetween(...nextWeek(new Date())) ?? [], (settingsRef.current?.icsUrls.length ?? 0) > 0),
                     }),
                 },
               ],

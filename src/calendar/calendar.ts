@@ -49,7 +49,8 @@ export function createCalendar(d: CalendarDeps) {
     await Promise.all(
       urls.map(async (u) => {
         try {
-          bySource.set(u, await new IcsSource(u).getEvents(new Date(now - DAY), new Date(now + 2 * DAY)));
+          // far enough ahead for "다음 주 일정 알려줘": next week ends at most 14 days from now
+          bySource.set(u, await new IcsSource(u).getEvents(new Date(now - DAY), new Date(now + 15 * DAY)));
         } catch (err) {
           console.warn("ICS fetch failed", err); // keep the last good events for this source
         }
@@ -78,6 +79,12 @@ export function createCalendar(d: CalendarDeps) {
       midnight.setHours(24, 0, 0, 0);
       return events()
         .filter((e) => e.start >= now && e.start < midnight)
+        .sort((a, b) => a.start.getTime() - b.start.getTime());
+    },
+    /** events starting in [from, to), earliest first */
+    eventsBetween(from: Date, to: Date) {
+      return events()
+        .filter((e) => e.start >= from && e.start < to)
         .sort((a, b) => a.start.getTime() - b.start.getTime());
     },
     /** the earliest event that still starts later today */

@@ -401,6 +401,30 @@ export function scheduleMessage(left: { title: string; start: Date }[], connecte
   return `${head}. 다음은 ${clock(left[0].start)} '${shorten(left[0].title)}'`;
 }
 
+/** Next week, Monday 00:00 to the Monday after; asked on a weekend it is the week that starts tomorrow or the day after. */
+export function nextWeek(now: Date): [Date, Date] {
+  const from = new Date(now);
+  from.setHours(0, 0, 0, 0);
+  from.setDate(from.getDate() + (((8 - from.getDay()) % 7) || 7)); // days until the coming Monday, never today
+  const to = new Date(from);
+  to.setDate(to.getDate() + 7);
+  return [from, to];
+}
+
+const WEEK_SHOWN = 6;
+const weekLines = {
+  none: ["다음 주에는 아직 일정이 없어요. 여유로운 한 주가 되겠네요", "다음 주 캘린더는 아직 비어 있어요"],
+};
+
+/** Answer to "다음 주 일정 알려줘": how many, then a line per event ("월 10:30 주간회의"), the rest counted. */
+export function weekMessage(events: { title: string; start: Date }[], connected: boolean, rand: () => number = Math.random) {
+  if (!connected) return pick(scheduleLines.notConnected, rand);
+  if (!events.length) return pick(weekLines.none, rand);
+  const lines = events.slice(0, WEEK_SHOWN).map((e) => `${dayLabels[e.start.getDay()]} ${clock(e.start)} ${shorten(e.title)}`);
+  const more = events.length > WEEK_SHOWN ? [`외 ${events.length - WEEK_SHOWN}개`] : [];
+  return [`다음 주 일정은 ${events.length}개예요`, ...lines, ...more].join("\n");
+}
+
 /* ───────── 점심 룰렛 ───────── */
 
 const lunchAsk = [
@@ -959,6 +983,7 @@ export const sharedLines = () => [
   ...itemGotLines,
   ...Object.values(leaveLines).flat(),
   ...Object.values(scheduleLines).flat(),
+  ...weekLines.none,
   ...petQuips.skipped,
   ...petQuips.quiet,
   ...petQuips.resumed,
@@ -1000,6 +1025,7 @@ export const petMenuText = {
   lunch: "점심 메뉴 추천",
   leave: "퇴근까지 얼마나 남았어?",
   schedule: "오늘 일정 알려줘",
+  week: "다음 주 일정 알려줘",
   settings: "설정",
   quietOn: "조용히 하기",
   quietOff: "다시 말 걸기",
