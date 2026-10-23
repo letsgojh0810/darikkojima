@@ -45,6 +45,7 @@ export const RobotAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           state={state}
           blink={blink}
           muted={muted}
+          noBlush={outfit?.face === "cheeks"}
           eyeY={41}
           mouthY={51}
           neutralMouth={<path d="M55 50 q5 4 10 0" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />}

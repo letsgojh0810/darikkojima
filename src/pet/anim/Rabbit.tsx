@@ -38,6 +38,7 @@ export const RabbitAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           state={state}
           blink={blink}
           muted={muted}
+          noBlush={outfit?.face === "cheeks"}
           eyeY={46}
           mouthY={58}
           neutralMouth={<path d="M60 54 v2 M60 56 q-3 3 -6 1 M60 56 q3 3 6 1" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />}

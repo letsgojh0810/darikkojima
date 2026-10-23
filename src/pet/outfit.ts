@@ -29,6 +29,12 @@ export const ITEMS: Item[] = [
   { id: "partyhat", slot: "head", level: 5 },
   { id: "stars", slot: "face", level: 10 },
   { id: "pearls", slot: "neck", level: 10 },
+  { id: "freckles", slot: "face", level: 1 },
+  { id: "whistle", slot: "neck", level: 1 },
+  { id: "mask", slot: "face", level: 5 },
+  { id: "camera", slot: "neck", level: 5 },
+  { id: "mustache", slot: "face", level: 10 },
+  { id: "chain", slot: "neck", level: 10 },
   { id: "cap", slot: "head", level: 5 },
   { id: "headphones", slot: "head", level: 5 },
   { id: "sunglasses", slot: "face", level: 5 },
@@ -80,13 +86,15 @@ export interface Anchors {
   top: Pt;
   eyes: [Pt, Pt];
   ears: [Pt, Pt];
+  /** just under the nose, where a mustache sits and a mask is centred */
+  mouth: Pt;
   neck: Pt;
   size: number;
 }
 
 export const ANCHORS: Record<string, Anchors> = {
-  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], neck: { x: 60, y: 66 }, size: 1 },
-  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], neck: { x: 60, y: 66 }, size: 1 },
-  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], neck: { x: 60, y: 68 }, size: 0.95 },
-  robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], neck: { x: 60, y: 65 }, size: 1.12 },
+  cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], mouth: { x: 60, y: 52 }, neck: { x: 60, y: 66 }, size: 1 },
+  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], mouth: { x: 60, y: 52.5 }, neck: { x: 60, y: 66 }, size: 1 },
+  rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], mouth: { x: 60, y: 55 }, neck: { x: 60, y: 68 }, size: 0.95 },
+  robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], mouth: { x: 60, y: 51 }, neck: { x: 60, y: 65 }, size: 1.12 },
 };

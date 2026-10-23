@@ -43,6 +43,7 @@ export const DogAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           state={state}
           blink={blink}
           muted={muted}
+          noBlush={outfit?.face === "cheeks"}
           eyeY={40}
           mouthY={56}
           neutralMouth={

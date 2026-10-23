@@ -925,6 +925,12 @@ export const itemNames: Record<string, string> = {
   partyhat: "고깔모자",
   stars: "별 안경",
   pearls: "진주 목걸이",
+  freckles: "주근깨",
+  whistle: "호루라기",
+  mask: "마스크",
+  camera: "카메라",
+  mustache: "콧수염",
+  chain: "금 체인",
   headset: "회의용 헤드셋",
 };
 

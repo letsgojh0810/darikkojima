@@ -43,6 +43,7 @@ export function FrontFace({
   mouthY,
   neutralMouth,
   muted,
+  noBlush,
 }: {
   state: PetState;
   blink: boolean;
@@ -50,6 +51,8 @@ export function FrontFace({
   mouthY: number;
   neutralMouth: ReactNode;
   muted?: boolean;
+  /** the heart stickers (outfit "cheeks") take the blush's place */
+  noBlush?: boolean;
 }) {
   const closed = state === "sleep" || blink;
   const joy = state === "hover" || state === "click" || state === "drag";
@@ -70,8 +73,8 @@ export function FrontFace({
 
   return (
     <>
-      <circle cx="41" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />
-      <circle cx="79" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />
+      {!noBlush && <circle cx="41" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />}
+      {!noBlush && <circle cx="79" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />}
       {eye(50)}
       {eye(70)}
       {nag && (

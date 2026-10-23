@@ -50,6 +50,7 @@ export const CatAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           state={state}
           blink={blink}
           muted={muted}
+          noBlush={outfit?.face === "cheeks"}
           eyeY={42}
           mouthY={55}
           neutralMouth={<path d="M60 51 q-3 4 -6 2 M60 51 q3 4 6 2" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />}

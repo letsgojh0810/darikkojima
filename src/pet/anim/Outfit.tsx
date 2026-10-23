@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Anchors, Outfit } from "../outfit";
+import { outline } from "./FrontFace";
 
 const INK = "#191F28";
 const GOLD = "#FFD66B";
@@ -143,59 +144,62 @@ const HEAD: Record<string, ReactNode> = {
   ),
 };
 
+/** heart outline centred on (x, y), r being the half-width */
+const heartAt = (x: number, y: number, r: number) =>
+  `M${x} ${y + r} C${x - 1.7 * r} ${y}, ${x - r} ${y - 1.2 * r}, ${x} ${y - 0.35 * r} C${x + r} ${y - 1.2 * r}, ${x + 1.7 * r} ${y}, ${x} ${y + r} Z`;
+
+/** five-pointed star centred on (x, y), r the outer radius */
+const starAt = (x: number, y: number, r: number) =>
+  `M${along(10, (i) => {
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    const d = i % 2 ? r * 0.45 : r;
+    return `${(x + d * Math.cos(a)).toFixed(2)} ${(y + d * Math.sin(a)).toFixed(2)}`;
+  }).join(" L")} Z`;
+
+/** a thin outline in a darker shade of the piece's own colour, like the pets' (FrontFace outline) */
+const edge = (fill: string, width = 1) => ({ fill, stroke: outline(fill), strokeWidth: width, strokeLinejoin: "round" as const });
+
+/**
+ * A necklace hanging from both sides of the chin: `n` points from x = -w to w, the middle `sag` lower than the ends.
+ * In SVG y grows downwards, so the middle has the largest y (a U, never an upside-down arc).
+ */
+const hang = (n: number, w: number, sag: number) =>
+  along(n, (i) => {
+    const x = -w + (2 * w * i) / (n - 1);
+    return [x, sag * (1 - (x / w) ** 2)] as const;
+  }) as unknown as (readonly [number, number])[];
+
 /** neck pieces, (0, 0) at the bottom of the chin; they hang from there, so nothing crosses the outlined chin */
 const NECK: Record<string, ReactNode> = {
   tie: (
     <>
-      <path d="M-4 -1 h8 l-2 5 h-4 Z" fill="#F04452" />
-      <path d="M-2 4 h4 l3 12 l-5 4 l-5 -4 Z" fill="#F04452" />
+      <path d="M-2.6 4.5 H2.6 L5.5 16 L0 21 L-5.5 16 Z" {...edge("#F04452")} />
+      <path d="M-4.5 -1 H4.5 L3 4.5 H-3 Z" {...edge("#E03A48")} />
     </>
   ),
   bandana: (
     <>
-      <path d="M-17 -1 L17 -1 L0 15 Z" fill="#FF9F1C" />
-      <circle cx="-6" cy="3" r="1.3" fill="#fff" />
-      <circle cx="5" cy="3" r="1.3" fill="#fff" />
-      <circle cy="8" r="1.3" fill="#fff" />
+      <path d="M-17 -1 Q0 4 17 -1 L2.5 14.5 Q0 17 -2.5 14.5 Z" {...edge("#FF9F1C")} />
+      <circle cx="-7" cy="3.6" r="1.3" fill="#fff" />
+      <circle cx="6.5" cy="3.6" r="1.3" fill="#fff" />
+      <circle cy="9" r="1.3" fill="#fff" />
     </>
   ),
   scarf: (
     <>
-      <rect x="-22" y="-3" width="44" height="9" rx="4.5" fill="#F04452" />
-      <rect x="9" y="3" width="8" height="14" rx="3" fill="#D93645" />
+      {/* the end hangs in front, drawn first so the wrap lies over its top */}
+      <path d="M7.5 3 H15.5 L17 19 H9 Z" {...edge("#D93645")} />
+      <path d="M9.6 19 v2.6 M12.8 19 v2.6 M16 19 v2.6" stroke="#D93645" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M8.3 11 H16.2" stroke="#FF8A94" strokeWidth="1.4" />
+      <path d="M-21 -2 Q0 5 21 -2 L21 5 Q0 12 -21 5 Z" {...edge("#F04452")} />
+      <path d="M-18 2 Q0 8.5 18 2" fill="none" stroke="#FF8A94" strokeWidth="1.2" />
     </>
   ),
   bow: (
     <>
-      <path d="M0 3 L-11 -4 L-11 10 Z M0 3 L11 -4 L11 10 Z" fill="#FF8FA0" stroke="#FF8FA0" strokeWidth="2" strokeLinejoin="round" />
-      <circle cy="3" r="3.5" fill="#FF6F86" />
-    </>
-  ),
-  medal: (
-    <>
-      <path d="M-7 0 L0 10 L7 0" fill="none" stroke="#3182F6" strokeWidth="3" />
-      <circle cy="13" r="5.5" fill={GOLD} stroke={GOLD_EDGE} strokeWidth="1.2" />
-    </>
-  ),
-  lei: (
-    <>
-      {along(7, (i) => (
-        <circle key={i} cx={-18 + i * 6} cy={(-18 + i * 6) ** 2 / -40 + 9} r="3.4" fill={["#FF8FA0", GOLD, "#FFB58F"][i % 3]} />
-      ))}
-    </>
-  ),
-  locket: (
-    <>
-      <path d="M-14 0 Q0 12 14 0" fill="none" stroke="#8B95A1" strokeWidth="1.3" />
-      <path d="M0 15 C-6 10 -5 6 -2.5 6 C-1 6 0 7.5 0 7.5 C0 7.5 1 6 2.5 6 C5 6 6 10 0 15 Z" fill="#F04452" />
-    </>
-  ),
-  bell: (
-    <>
-      <path d="M-17 0 Q0 7 17 0" fill="none" stroke="#F04452" strokeWidth="4" strokeLinecap="round" />
-      <circle cy="9" r="4.6" fill={GOLD} stroke={GOLD_EDGE} strokeWidth="1.2" />
-      <path d="M-2.4 10.5 H2.4" stroke={GOLD_EDGE} strokeWidth="1.2" strokeLinecap="round" />
-      <circle cx="-1.5" cy="7.5" r="1" fill="#fff" opacity="0.8" />
+      <path d="M0 3 L-11 -4 Q-13 3 -11 10 Z M0 3 L11 -4 Q13 3 11 10 Z" {...edge("#FF8FA0")} />
+      <path d="M-7 1 L-3 2.5 M-7 5 L-3 3.5 M7 1 L3 2.5 M7 5 L3 3.5" stroke="#FF6F86" strokeWidth="0.9" strokeLinecap="round" />
+      <circle cy="3" r="3.4" {...edge("#FF6F86")} />
     </>
   ),
   bowtie: (
@@ -204,13 +208,49 @@ const NECK: Record<string, ReactNode> = {
       <rect x="-2.6" y="0.5" width="5.2" height="5" rx="1.5" fill="#4E5968" />
     </>
   ),
+  medal: (
+    <>
+      <path d="M-8 0 L-1.5 10 M8 0 L1.5 10" stroke="#1B64DA" strokeWidth="4.2" strokeLinecap="round" />
+      <path d="M-8 0 L-1.5 10 M8 0 L1.5 10" stroke="#3182F6" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cy="14" r="5.6" {...edge(GOLD, 1.2)} />
+      <path d={starAt(0, 14, 3)} fill={GOLD_EDGE} />
+    </>
+  ),
+  lei: (
+    <>
+      {hang(7, 18, 8).map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="3.4" {...edge(["#FF8FA0", GOLD, "#FFB58F"][i % 3], 0.9)} />
+          <circle cx={x} cy={y} r="1" fill="#fff" opacity="0.85" />
+        </g>
+      ))}
+    </>
+  ),
+  locket: (
+    <>
+      <path d="M-13 -1 Q0 15 13 -1" fill="none" stroke="#8B95A1" strokeWidth="1.3" />
+      <path d="M0 15.5 C-6 10.5 -5 6.5 -2.5 6.5 C-1 6.5 0 8 0 8 C0 8 1 6.5 2.5 6.5 C5 6.5 6 10.5 0 15.5 Z" {...edge("#F04452")} />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M-17 0 Q0 7 17 0" fill="none" stroke={outline("#F04452")} strokeWidth="5.6" strokeLinecap="round" />
+      <path d="M-17 0 Q0 7 17 0" fill="none" stroke="#F04452" strokeWidth="4" strokeLinecap="round" />
+      <circle cy="9" r="4.6" {...edge(GOLD, 1.2)} />
+      <path d="M-2.4 10.5 H2.4" stroke={GOLD_EDGE} strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="-1.5" cy="7.5" r="1" fill="#fff" opacity="0.8" />
+    </>
+  ),
   pearls: (
     <>
-      {along(9, (i) => {
-        const x = -16 + i * 4;
-        return <circle key={i} cx={x} cy={x ** 2 / 45 + 1} r="2.3" fill="#FFFDF8" stroke="#D1D6DB" strokeWidth="0.8" />;
-      })}
-      <circle cy="7" r="3" fill="#FFFDF8" stroke="#D1D6DB" strokeWidth="0.8" />
+      {hang(9, 16, 8).map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="2.3" {...edge("#FBF8F2", 0.9)} />
+          <circle cx={x - 0.7} cy={y - 0.7} r="0.7" fill="#fff" />
+        </g>
+      ))}
+      <circle cy="12" r="3" {...edge("#FBF8F2", 0.9)} />
+      <circle cx="-0.9" cy="11.1" r="0.9" fill="#fff" />
     </>
   ),
   badge: (
@@ -218,6 +258,39 @@ const NECK: Record<string, ReactNode> = {
       <path d="M-12 0 L-3 11 M12 0 L3 11" stroke="#3182F6" strokeWidth="2" />
       <rect x="-6" y="10" width="12" height="15" rx="2" fill="#fff" stroke="#B0B8C1" />
       <rect x="-3" y="13" width="6" height="5" rx="1" fill="#B0B8C1" />
+    </>
+  ),
+  whistle: (
+    <>
+      <path d="M-11 -1 Q0 19 11 -1" fill="none" stroke="#00A661" strokeWidth="1.8" />
+      <g transform="translate(0 12) rotate(-12)">
+        <rect x="-8" y="-1.5" width="7" height="3.6" rx="1" {...edge("#C9CED6")} />
+        <circle cx="2" cy="2" r="4.4" {...edge("#C9CED6")} />
+        <rect x="-0.5" y="-2.6" width="2.6" height="1.6" rx="0.5" fill="#6B7684" />
+        <circle cx="1" cy="0.8" r="1.1" fill="#fff" opacity="0.7" />
+      </g>
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M-14 -1 Q0 22 14 -1" fill="none" stroke="#333D4B" strokeWidth="1.8" />
+      <rect x="-3.2" y="8" width="6.4" height="3" rx="1" {...edge("#4E5968")} />
+      <rect x="-8.5" y="10" width="17" height="11.5" rx="2.6" {...edge("#4E5968")} />
+      <circle cy="15.8" r="4.3" fill="#191F28" stroke="#8B95A1" strokeWidth="1.1" />
+      <circle cx="-1.2" cy="14.6" r="1.2" fill="#fff" opacity="0.8" />
+      <rect x="4.6" y="11.6" width="2.4" height="1.6" rx="0.5" fill={GOLD} />
+    </>
+  ),
+  chain: (
+    <>
+      {hang(13, 17, 10).map(([x, y], i, all) => {
+        const [nx, ny] = all[Math.min(i + 1, all.length - 1)];
+        const [px, py] = all[Math.max(i - 1, 0)];
+        const deg = (Math.atan2(ny - py, nx - px) * 180) / Math.PI;
+        return <ellipse key={i} cx={x} cy={y} rx="2" ry={i % 2 ? 0.9 : 1.3} transform={`rotate(${deg} ${x} ${y})`} fill="none" stroke={GOLD_EDGE} strokeWidth="1.3" />;
+      })}
+      <circle cy="13.5" r="3.4" {...edge(GOLD, 1.1)} />
+      <circle cx="-1" cy="12.5" r="1" fill="#fff" opacity="0.8" />
     </>
   ),
 };
@@ -260,36 +333,56 @@ const SIDES: Record<string, (a: Anchors) => ReactNode> = {
   ),
 };
 
-/** heart outline around an eye, r being the half-width */
-const heartAt = (x: number, y: number, r: number) =>
-  `M${x} ${y + r} C${x - 1.7 * r} ${y}, ${x - r} ${y - 1.2 * r}, ${x} ${y - 0.35 * r} C${x + r} ${y - 1.2 * r}, ${x + 1.7 * r} ${y}, ${x} ${y + r} Z`;
-
-/** five-pointed star centred on (x, y), r the outer radius */
-const starAt = (x: number, y: number, r: number) =>
-  `M${along(10, (i) => {
-    const a = (i * Math.PI) / 5 - Math.PI / 2;
-    const d = i % 2 ? r * 0.45 : r;
-    return `${(x + d * Math.cos(a)).toFixed(2)} ${(y + d * Math.sin(a)).toFixed(2)}`;
-  }).join(" L")} Z`;
-
-/** face pieces that are not glasses: drawn from the eyes too, cheeks sitting below and outside them */
+/**
+ * Face pieces that are not glasses, drawn from the face's own anchors: the cheeks are where every pet's blush is
+ * (FrontFace: 10 left and right of the eyes, 8 below them), the mouth anchor sits right under the nose.
+ */
+// FrontFace draws the blush 9 beside and 8 below each eye whatever the pet's size, so this does not scale either
+const cheekOf = (e: { x: number; y: number }, side: -1 | 1) => ({ x: e.x + side * 9, y: e.y + 8 });
 const FACE_EXTRAS: Record<string, (a: Anchors) => ReactNode> = {
-  cheeks: ({ eyes: [l, r], size: k }) => (
+  // a heart a little larger than the blush, so it replaces it instead of sitting on top of it
+  cheeks: ({ eyes: [l, r], size: k }) =>
+    [cheekOf(l, -1), cheekOf(r, 1)].map((c, i) => <path key={i} d={heartAt(c.x, c.y, 4.6 * k)} {...edge("#FF6F86", 0.8 * k)} />),
+  freckles: ({ eyes: [l, r], size: k }) =>
+    [cheekOf(l, -1), cheekOf(r, 1)].flatMap((c, i) =>
+      [[-2.6, -1.2], [0, 0.8], [2.6, -0.8]].map(([dx, dy], j) => <circle key={`${i}${j}`} cx={c.x + dx * k} cy={c.y + dy * k} r={0.85 * k} fill="#B07A52" />),
+    ),
+  mask: ({ mouth: m, ears: [el, er], size: k }) => (
     <>
-      <path d={heartAt(l.x - 9 * k, l.y + 9 * k, 3.2 * k)} fill="#FF6F86" />
-      <path d={heartAt(r.x + 9 * k, r.y + 9 * k, 3.2 * k)} fill="#FF6F86" />
+      <path d={`M${m.x - 12 * k} ${m.y - 3 * k} L${el.x} ${el.y} M${m.x + 12 * k} ${m.y - 3 * k} L${er.x} ${er.y}`} stroke="#B0B8C1" strokeWidth={0.9 * k} />
+      <g transform={`translate(${m.x} ${m.y}) scale(${k})`}>
+        <path d="M-12.5 -5 Q0 -8.5 12.5 -5 L11.5 5 Q0 10.5 -11.5 5 Z" {...edge("#F7F9FC", 0.9)} />
+        <path d="M-10.5 -1.5 Q0 -4 10.5 -1.5 M-10.5 2.5 Q0 0.5 10.5 2.5" fill="none" stroke="#DCE1E7" strokeWidth="0.9" />
+      </g>
     </>
   ),
+  mustache: ({ mouth: m, size: k }) => {
+    const half = "M0 0.5 C-2 -2.2 -6.5 -3 -9.5 -0.6 C-10.8 0.5 -12 0.2 -12.6 -1.2 C-12.5 2 -9.6 3.6 -6.6 2.9 C-4 2.3 -1.6 1.7 0 2 Z";
+    return (
+      <g transform={`translate(${m.x} ${m.y}) scale(${k})`}>
+        <path d={half} {...edge("#3B2B20", 0.6)} />
+        <path d={half} transform="scale(-1 1)" {...edge("#3B2B20", 0.6)} />
+      </g>
+    );
+  },
   bandage: ({ eyes: [, r], size: k }) => (
     <g transform={`translate(${r.x + 9 * k} ${r.y + 9 * k}) rotate(-28) scale(${k})`}>
       <rect x="-7" y="-2.6" width="14" height="5.2" rx="2.6" fill="#F7D3AE" stroke="#E2B07E" strokeWidth="0.8" />
       <rect x="-2.4" y="-2.6" width="4.8" height="5.2" fill="#EEC08F" />
     </g>
   ),
-  eyepatch: ({ eyes: [l, r], size: k }) => (
+  // the strap runs from the patch to both sides of the head (the ears anchors), over the forehead on the far side
+  eyepatch: ({ eyes: [l, r], ears: [el, er], size: k }) => (
     <>
-      <path d={`M${l.x - 9 * k} ${l.y - 10 * k} L${l.x + 2 * k} ${l.y} M${l.x} ${l.y - 2 * k} Q${(l.x + r.x) / 2} ${l.y - 13 * k} ${r.x + 13 * k} ${r.y - 9 * k}`} fill="none" stroke={INK} strokeWidth={1.4 * k} />
+      <path
+        d={`M${l.x - 5 * k} ${l.y - 2 * k} L${el.x + 2.5 * k} ${el.y - 4 * k} M${l.x + 5 * k} ${l.y - 3 * k} Q${(l.x + r.x) / 2} ${r.y - 12 * k} ${er.x - 2.5 * k} ${er.y - 6 * k}`}
+        fill="none"
+        stroke={INK}
+        strokeWidth={1.4 * k}
+        strokeLinecap="round"
+      />
       <ellipse cx={l.x} cy={l.y} rx={6 * k} ry={5.2 * k} fill={INK} />
+      <ellipse cx={l.x - 1.6 * k} cy={l.y - 1.6 * k} rx={1.8 * k} ry={1.1 * k} fill="#4E5968" />
     </>
   ),
   stars: ({ eyes, size: k }) => (
@@ -319,7 +412,8 @@ function Face({ id, a }: { id: string; a: Anchors }) {
   const rim = goggles ? "#1B64DA" : INK;
   return (
     <>
-      {goggles && <path d={`M${e1.x - r} ${e1.y} h${-9 * a.size} M${e2.x + r} ${e2.y} h${9 * a.size}`} stroke={rim} strokeWidth={w * 1.6} strokeLinecap="round" />}
+      {/* the strap ends at the sides of the head (ears anchors), so it never sticks out past the outline */}
+      {goggles && <path d={`M${e1.x - r} ${e1.y} L${a.ears[0].x + w} ${e1.y} M${e2.x + r} ${e2.y} L${a.ears[1].x - w} ${e2.y}`} stroke={rim} strokeWidth={w * 1.6} strokeLinecap="round" />}
       {a.eyes.map((e, i) =>
         id === "sunglasses" ? (
           <rect key={i} x={e.x - r} y={e.y - r * 0.75} width={r * 2} height={r * 1.5} rx={r * 0.5} fill={INK} />
