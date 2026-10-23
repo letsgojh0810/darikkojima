@@ -1,5 +1,5 @@
 import { ANCHORS } from "../outfit";
-import { OutfitLayer } from "./Outfit";
+import { NeckLayer, OutfitLayer } from "./Outfit";
 import { FrontFace, INK, LINE_W, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -26,6 +26,7 @@ export const RabbitAnim: PetAnimation = ({ state, muted, outfit, color }) => {
       <ellipse cx="60" cy="83" rx="16" ry="10" fill={SHADE} />
       <ellipse className="leg" cx="46" cy="90" rx="9" ry="5" fill={SHADE} {...line} />
       <ellipse className="leg b" cx="74" cy="90" rx="9" ry="5" fill={SHADE} {...line} />
+      <NeckLayer outfit={outfit} a={ANCHORS.rabbit} />
       <g transform={`translate(0 ${headDy(state)})`}>
         <ellipse cx="46" cy="20" rx="8" ry="17" transform="rotate(-8 46 20)" fill={FUR} {...line} />
         <ellipse cx="74" cy="20" rx="8" ry="17" transform="rotate(8 74 20)" fill={FUR} {...line} />

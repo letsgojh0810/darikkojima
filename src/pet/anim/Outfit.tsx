@@ -160,26 +160,32 @@ const starAt = (x: number, y: number, r: number) =>
 const edge = (fill: string, width = 1) => ({ fill, stroke: outline(fill), strokeWidth: width, strokeLinejoin: "round" as const });
 
 /**
- * A necklace hanging from both sides of the chin: `n` points from x = -w to w, the middle `sag` lower than the ends.
- * In SVG y grows downwards, so the middle has the largest y (a U, never an upside-down arc).
+ * A necklace hanging around the neck: `n` points from x = -w to w, the ends at `top` (above the chin line, hidden
+ * behind the head, see NeckLayer) and the middle `sag` lower. In SVG y grows downwards, so the middle has the largest y
+ * (a U, never an upside-down arc). The chin curves up towards the sides, about 5 units at w = 17, so wider pieces
+ * start higher.
  */
-const hang = (n: number, w: number, sag: number) =>
+const hang = (n: number, w: number, sag: number, top: number) =>
   along(n, (i) => {
     const x = -w + (2 * w * i) / (n - 1);
-    return [x, sag * (1 - (x / w) ** 2)] as const;
+    return [x, top + sag * (1 - (x / w) ** 2)] as const;
   }) as unknown as (readonly [number, number])[];
 
-/** neck pieces, (0, 0) at the bottom of the chin; they hang from there, so nothing crosses the outlined chin */
+/**
+ * neck pieces, (0, 0) at the bottom of the chin. They are drawn behind the head (NeckLayer), so whatever goes around
+ * the neck starts above y = 0 and comes out from under the chin.
+ */
 const NECK: Record<string, ReactNode> = {
+  // tie, ribbon and bow tie sit in front of the collar, so they start just below the chin and show whole
   tie: (
-    <>
+    <g transform="translate(0 2)">
       <path d="M-2.6 4.5 H2.6 L5.5 16 L0 21 L-5.5 16 Z" {...edge("#F04452")} />
       <path d="M-4.5 -1 H4.5 L3 4.5 H-3 Z" {...edge("#E03A48")} />
-    </>
+    </g>
   ),
   bandana: (
     <>
-      <path d="M-17 -1 Q0 4 17 -1 L2.5 14.5 Q0 17 -2.5 14.5 Z" {...edge("#FF9F1C")} />
+      <path d="M-19 -9 Q0 0 19 -9 L2.5 14.5 Q0 17 -2.5 14.5 Z" {...edge("#FF9F1C")} />
       <circle cx="-7" cy="3.6" r="1.3" fill="#fff" />
       <circle cx="6.5" cy="3.6" r="1.3" fill="#fff" />
       <circle cy="9" r="1.3" fill="#fff" />
@@ -191,34 +197,34 @@ const NECK: Record<string, ReactNode> = {
       <path d="M7.5 3 H15.5 L17 19 H9 Z" {...edge("#D93645")} />
       <path d="M9.6 19 v2.6 M12.8 19 v2.6 M16 19 v2.6" stroke="#D93645" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M8.3 11 H16.2" stroke="#FF8A94" strokeWidth="1.4" />
-      <path d="M-21 -2 Q0 5 21 -2 L21 5 Q0 12 -21 5 Z" {...edge("#F04452")} />
-      <path d="M-18 2 Q0 8.5 18 2" fill="none" stroke="#FF8A94" strokeWidth="1.2" />
+      <path d="M-21 -12 Q0 -1 21 -12 L21 -1 Q0 11 -21 -1 Z" {...edge("#F04452")} />
+      <path d="M-19 -4 Q0 7 19 -4" fill="none" stroke="#FF8A94" strokeWidth="1.2" />
     </>
   ),
   bow: (
-    <>
+    <g transform="translate(0 5)">
       <path d="M0 3 L-11 -4 Q-13 3 -11 10 Z M0 3 L11 -4 Q13 3 11 10 Z" {...edge("#FF8FA0")} />
       <path d="M-7 1 L-3 2.5 M-7 5 L-3 3.5 M7 1 L3 2.5 M7 5 L3 3.5" stroke="#FF6F86" strokeWidth="0.9" strokeLinecap="round" />
       <circle cy="3" r="3.4" {...edge("#FF6F86")} />
-    </>
+    </g>
   ),
   bowtie: (
-    <>
+    <g transform="translate(0 4.5)">
       <path d="M0 3 L-10 -3 L-10 9 Z M0 3 L10 -3 L10 9 Z" fill={INK} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
       <rect x="-2.6" y="0.5" width="5.2" height="5" rx="1.5" fill="#4E5968" />
-    </>
+    </g>
   ),
   medal: (
     <>
-      <path d="M-8 0 L-1.5 10 M8 0 L1.5 10" stroke="#1B64DA" strokeWidth="4.2" strokeLinecap="round" />
-      <path d="M-8 0 L-1.5 10 M8 0 L1.5 10" stroke="#3182F6" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M-10 -8 L-1.5 10 M10 -8 L1.5 10" stroke="#1B64DA" strokeWidth="4.2" strokeLinecap="round" />
+      <path d="M-10 -8 L-1.5 10 M10 -8 L1.5 10" stroke="#3182F6" strokeWidth="2.6" strokeLinecap="round" />
       <circle cy="14" r="5.6" {...edge(GOLD, 1.2)} />
       <path d={starAt(0, 14, 3)} fill={GOLD_EDGE} />
     </>
   ),
   lei: (
     <>
-      {hang(7, 18, 8).map(([x, y], i) => (
+      {hang(7, 16, 15, -9).map(([x, y], i) => (
         <g key={i}>
           <circle cx={x} cy={y} r="3.4" {...edge(["#FF8FA0", GOLD, "#FFB58F"][i % 3], 0.9)} />
           <circle cx={x} cy={y} r="1" fill="#fff" opacity="0.85" />
@@ -228,14 +234,14 @@ const NECK: Record<string, ReactNode> = {
   ),
   locket: (
     <>
-      <path d="M-13 -1 Q0 15 13 -1" fill="none" stroke="#8B95A1" strokeWidth="1.3" />
+      <path d="M-13 -7 Q0 20 13 -7" fill="none" stroke="#8B95A1" strokeWidth="1.3" />
       <path d="M0 15.5 C-6 10.5 -5 6.5 -2.5 6.5 C-1 6.5 0 8 0 8 C0 8 1 6.5 2.5 6.5 C5 6.5 6 10.5 0 15.5 Z" {...edge("#F04452")} />
     </>
   ),
   bell: (
     <>
-      <path d="M-17 0 Q0 7 17 0" fill="none" stroke={outline("#F04452")} strokeWidth="5.6" strokeLinecap="round" />
-      <path d="M-17 0 Q0 7 17 0" fill="none" stroke="#F04452" strokeWidth="4" strokeLinecap="round" />
+      <path d="M-17 -8 Q0 12 17 -8" fill="none" stroke={outline("#F04452")} strokeWidth="5.6" strokeLinecap="round" />
+      <path d="M-17 -8 Q0 12 17 -8" fill="none" stroke="#F04452" strokeWidth="4" strokeLinecap="round" />
       <circle cy="9" r="4.6" {...edge(GOLD, 1.2)} />
       <path d="M-2.4 10.5 H2.4" stroke={GOLD_EDGE} strokeWidth="1.2" strokeLinecap="round" />
       <circle cx="-1.5" cy="7.5" r="1" fill="#fff" opacity="0.8" />
@@ -243,7 +249,7 @@ const NECK: Record<string, ReactNode> = {
   ),
   pearls: (
     <>
-      {hang(9, 16, 8).map(([x, y], i) => (
+      {hang(9, 16, 16, -8).map(([x, y], i) => (
         <g key={i}>
           <circle cx={x} cy={y} r="2.3" {...edge("#FBF8F2", 0.9)} />
           <circle cx={x - 0.7} cy={y - 0.7} r="0.7" fill="#fff" />
@@ -255,14 +261,14 @@ const NECK: Record<string, ReactNode> = {
   ),
   badge: (
     <>
-      <path d="M-12 0 L-3 11 M12 0 L3 11" stroke="#3182F6" strokeWidth="2" />
+      <path d="M-13 -8 L-3 11 M13 -8 L3 11" stroke="#3182F6" strokeWidth="2" />
       <rect x="-6" y="10" width="12" height="15" rx="2" fill="#fff" stroke="#B0B8C1" />
       <rect x="-3" y="13" width="6" height="5" rx="1" fill="#B0B8C1" />
     </>
   ),
   whistle: (
     <>
-      <path d="M-11 -1 Q0 19 11 -1" fill="none" stroke="#00A661" strokeWidth="1.8" />
+      <path d="M-11 -7 Q0 24 11 -7" fill="none" stroke="#00A661" strokeWidth="1.8" />
       <g transform="translate(0 12) rotate(-12)">
         <rect x="-8" y="-1.5" width="7" height="3.6" rx="1" {...edge("#C9CED6")} />
         <circle cx="2" cy="2" r="4.4" {...edge("#C9CED6")} />
@@ -273,7 +279,7 @@ const NECK: Record<string, ReactNode> = {
   ),
   camera: (
     <>
-      <path d="M-14 -1 Q0 22 14 -1" fill="none" stroke="#333D4B" strokeWidth="1.8" />
+      <path d="M-14 -8 Q0 27 14 -8" fill="none" stroke="#333D4B" strokeWidth="1.8" />
       <rect x="-3.2" y="8" width="6.4" height="3" rx="1" {...edge("#4E5968")} />
       <rect x="-8.5" y="10" width="17" height="11.5" rx="2.6" {...edge("#4E5968")} />
       <circle cy="15.8" r="4.3" fill="#191F28" stroke="#8B95A1" strokeWidth="1.1" />
@@ -283,7 +289,7 @@ const NECK: Record<string, ReactNode> = {
   ),
   chain: (
     <>
-      {hang(13, 17, 10).map(([x, y], i, all) => {
+      {hang(13, 17, 19, -9).map(([x, y], i, all) => {
         const [nx, ny] = all[Math.min(i + 1, all.length - 1)];
         const [px, py] = all[Math.max(i - 1, 0)];
         const deg = (Math.atan2(ny - py, nx - px) * 180) / Math.PI;
@@ -436,14 +442,23 @@ function Face({ id, a }: { id: string; a: Anchors }) {
   );
 }
 
-/** Draws what the pet wears; place it last inside the head group so it moves with the head and lies on top. */
+/**
+ * What is worn at the neck. Place it between the body and the head group: the head then covers the top of each piece,
+ * so chains and straps come out from under the chin instead of being stuck on top of it, and they stay with the body
+ * when the head bobs.
+ */
+export function NeckLayer({ outfit, a }: { outfit?: Outfit; a: Anchors }) {
+  const piece = outfit?.neck && NECK[outfit.neck];
+  return piece ? <g transform={`translate(${a.neck.x} ${a.neck.y}) scale(${a.size})`}>{piece}</g> : null;
+}
+
+/** Draws what is worn on the face and head; place it last inside the head group so it moves with the head and lies on top. */
 export function OutfitLayer({ outfit, a }: { outfit?: Outfit; a: Anchors }) {
   if (!outfit) return null;
   const at = (p: { x: number; y: number }) => `translate(${p.x} ${p.y}) scale(${a.size})`;
   const side = (id?: string) => id && SIDES[id]?.(a);
   return (
     <>
-      {outfit.neck && NECK[outfit.neck] && <g transform={at(a.neck)}>{NECK[outfit.neck]}</g>}
       {outfit.face && <Face id={outfit.face} a={a} />}
       {outfit.head && HEAD[outfit.head] && <g transform={at(a.top)}>{HEAD[outfit.head]}</g>}
       {side(outfit.head)}

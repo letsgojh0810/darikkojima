@@ -1,5 +1,5 @@
 import { ANCHORS } from "../outfit";
-import { OutfitLayer } from "./Outfit";
+import { NeckLayer, OutfitLayer } from "./Outfit";
 import { FrontFace, INK, LINE_W, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -32,6 +32,7 @@ export const CatAnim: PetAnimation = ({ state, muted, outfit, color }) => {
       <ellipse cx="60" cy="82" rx="17" ry="11" fill={BELLY} />
       <ellipse className="leg" cx="46" cy="90" rx="9" ry="5" fill={BELLY} {...line} />
       <ellipse className="leg b" cx="74" cy="90" rx="9" ry="5" fill={BELLY} {...line} />
+      <NeckLayer outfit={outfit} a={ANCHORS.cat} />
       <g transform={`translate(0 ${headDy(state)})`}>
         {ears.map((d) => (
           <path key={d} d={d} fill={FUR} stroke={line.stroke} strokeWidth={4 + 2 * LINE_W} strokeLinejoin="round" />

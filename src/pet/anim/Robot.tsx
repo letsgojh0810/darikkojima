@@ -1,5 +1,5 @@
 import { ANCHORS } from "../outfit";
-import { OutfitLayer } from "./Outfit";
+import { NeckLayer, OutfitLayer } from "./Outfit";
 import { FrontFace, INK, LINE_W, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -34,6 +34,7 @@ export const RobotAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           <circle cx="58.6" cy="73.6" r="1.4" fill="#fff" opacity="0.8" />
         </>
       )}
+      <NeckLayer outfit={outfit} a={ANCHORS.robot} />
       <g transform={`translate(0 ${headDy(state)})`}>
         <path d="M60 21 V11" stroke={DARK} strokeWidth="3" strokeLinecap="round" />
         <circle cx="60" cy="9" r="4" fill={LIGHT} stroke={outline(LIGHT)} strokeWidth={LINE_W} />

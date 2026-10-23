@@ -1,5 +1,5 @@
 import { ANCHORS } from "../outfit";
-import { OutfitLayer } from "./Outfit";
+import { NeckLayer, OutfitLayer } from "./Outfit";
 import { FrontFace, INK, LINE_W, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
@@ -31,6 +31,7 @@ export const DogAnim: PetAnimation = ({ state, muted, outfit, color }) => {
       <ellipse cx="60" cy="82" rx="17" ry="11" fill={MUZZLE} />
       <ellipse className="leg" cx="46" cy="90" rx="9" ry="5" fill={MUZZLE} {...line} />
       <ellipse className="leg b" cx="74" cy="90" rx="9" ry="5" fill={MUZZLE} {...line} />
+      <NeckLayer outfit={outfit} a={ANCHORS.dog} />
       <g transform={`translate(0 ${headDy(state)})`}>
         <ellipse cx="60" cy="42" rx="26" ry="24" fill={FUR} {...line} />
         <ellipse cx="50" cy="40" rx="9" ry="8" fill={PATCH} />
