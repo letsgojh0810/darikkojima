@@ -2,6 +2,14 @@
 
 한국 사무직용 Windows 펫 앱. 자세/물/스트레칭/캘린더를 잔소리 톤으로 리마인드.
 
+## 반드시 지킬 규칙 (`.claude/rules/`)
+작업 전에 해당 파일을 읽고 따른다. 이 문서와 충돌하면 rules가 우선한다.
+- `data-safety.md` — 데이터 유실 금지, 마이그레이션, 개인정보·비밀 키 (최우선)
+- `visual-quality.md` — 펫·옷장 품질, 4배 확대 전수 검수, 시안 먼저, 확정된 디자인 원칙
+- `ux-principles.md` — 사용자 경험을 해치는 추측성 수정 금지, 기본값, 설정 단순화
+- `release-workflow.md` — 커밋·릴리즈는 요청 시에만, draft 검증 후 공개, 버전 재사용 금지
+- `communication.md` — 한국어 존댓말, 사실대로 보고
+
 ## 스택 (고정)
 Tauri 2 + React + TypeScript + Vite. Rust는 네이티브(창 제어, 트레이, 전체화면 감지)에만 최소한으로.
 저장: tauri-plugin-store. 플러그인: notification, autostart, updater, single-instance, http. 타깃: Windows 10/11 x64만.
