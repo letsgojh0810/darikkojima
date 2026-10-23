@@ -1,6 +1,6 @@
 [package]
 name = "darikkojima"
-version = "0.2.4"
+version = "0.2.5"
 description = "한국 직장인을 위한 데스크탑 펫 리마인더"
 authors = ["hanjh"]
 edition = "2024"
