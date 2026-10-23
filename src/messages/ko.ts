@@ -586,7 +586,7 @@ export const settingsText = {
   accentLabel: "대표 색",
   about: "정보",
   appName: "다리꼬지마",
-  tagline: "책상 위에서 자세와 물을 챙겨 주는 작은 친구",
+  tagline: "모니터 안 작은 동료, Dari",
   star: "GitHub에서 별 눌러 주기",
   report: "문제 알리기",
   copyright: (year: number) => `© ${year} 다리꼬지마. All rights reserved.`,
