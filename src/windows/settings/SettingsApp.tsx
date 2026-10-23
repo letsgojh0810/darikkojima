@@ -779,8 +779,9 @@ export function SettingsApp() {
                     onChange={(e) => update(withProfile(s, s.pet, { name: e.target.value }))}
                   />
                 </Row>
-                <Row label={t.petColor}>
-                  <div className="swatches" role="radiogroup" aria-label={t.petColor}>
+                {/* the dog's "colours" are breeds, so the row says so; the picker is the same colour dots */}
+                <Row label={s.pet === "dog" ? t.petBreed : t.petColor}>
+                  <div className="swatches" role="radiogroup" aria-label={s.pet === "dog" ? t.petBreed : t.petColor}>
                     {(petColors[s.pet] ?? []).map((c, _, list) => (
                       <button
                         key={c.id}

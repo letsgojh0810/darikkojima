@@ -3,7 +3,6 @@ import { NeckLayer, OutfitLayer, SleepNeckLayer } from "./Outfit";
 import { FrontFace, Gloss, INK, LINE_W, Paw, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
-import { useBlink } from "./useBlink";
 
 // the rabbit's head sits higher on its body than the others', so asleep it sinks a little less
 const SLEEP_HEAD_RABBIT = "translate(-5 15) rotate(-8 60 46)";
@@ -18,7 +17,6 @@ export const RABBIT_COLORS = [
 
 // A rabbit with tall ears, sitting.
 export const RabbitAnim: PetAnimation = ({ state, muted, outfit, color }) => {
-  const blink = useBlink(state);
   const { FUR, SHADE, BELLY, PINK } = RABBIT_COLORS.find((c) => c.id === color) ?? RABBIT_COLORS[0];
   const line = { stroke: outline(FUR), strokeWidth: LINE_W };
   const asleep = state === "sleep";
@@ -65,7 +63,6 @@ export const RabbitAnim: PetAnimation = ({ state, muted, outfit, color }) => {
         <circle cx="59" cy="51.3" r="0.7" fill="#fff" opacity="0.8" />
         <FrontFace
           state={state}
-          blink={blink}
           muted={muted}
           noBlush={outfit?.face === "cheeks"}
           eyeY={46}

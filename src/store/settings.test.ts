@@ -9,6 +9,18 @@ describe("migrateSettings", () => {
     expect(s.petProfiles).toEqual({ robot: { name: "꼬북", outfit: { head: "cap" } }, cat: { name: "나비" } });
     expect(migrateSettings({ ...defaultSettings, pet: "dog" })).toEqual({ ...defaultSettings, pet: "dog" });
   });
+
+  it("moves renamed coat colours to their new names and keeps the rest of the profile", () => {
+    const old: Settings = {
+      ...defaultSettings,
+      petProfiles: { dog: { name: "콩이", color: "jindo", outfit: { head: "cap" } }, cat: { name: "나비", color: "tabby" }, rabbit: { name: "", color: "brown" } },
+    };
+    expect(migrateSettings(old).petProfiles).toEqual({
+      dog: { name: "콩이", color: "bichon", outfit: { head: "cap" } },
+      cat: { name: "나비", color: "calico" },
+      rabbit: { name: "", color: "brown" },
+    });
+  });
 });
 
 describe("withProfile", () => {

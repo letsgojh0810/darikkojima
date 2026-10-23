@@ -105,7 +105,14 @@ export interface Anchors {
 
 export const ANCHORS: Record<string, Anchors> = {
   cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], mouth: { x: 60, y: 52 }, neck: { x: 60, y: 66 }, size: 1 },
-  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], cups: [{ x: 34.5, y: 38 }, { x: 85.5, y: 38 }], mouth: { x: 60, y: 52.5 }, neck: { x: 60, y: 66 }, size: 1 },
   rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], mouth: { x: 60, y: 55 }, neck: { x: 60, y: 68 }, size: 0.95 },
   robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], mouth: { x: 60, y: 51 }, neck: { x: 60, y: 65 }, size: 1.12 },
+};
+
+/** each dog breed has a head of its own shape (pet/anim/Dog.tsx), so its clothes sit on anchors of its own */
+export const DOG_ANCHORS: Record<string, Anchors> = {
+  corgi: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 32.5, y: 47 }, { x: 87.5, y: 47 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 66 }, size: 1 },
+  bichon: { top: { x: 60, y: 12 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 27, y: 45 }, { x: 93, y: 45 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 69 }, size: 1 },
+  poodle: { top: { x: 60, y: 16 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 31, y: 44 }, { x: 89, y: 44 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 66 }, size: 1 },
+  pom: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 46 }, { x: 87, y: 46 }], mouth: { x: 60, y: 51.5 }, neck: { x: 60, y: 67 }, size: 1 },
 };

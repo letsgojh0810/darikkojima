@@ -4,7 +4,6 @@ import { NeckLayer, OutfitLayer, SleepNeckLayer } from "./Outfit";
 import { FrontFace, Gloss, INK, LINE_W, Pads, Paw, SLEEP_HEAD, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
-import { useBlink } from "./useBlink";
 
 const PINK = "#FF9F8E";
 const ORANGE = "#F2A35C";
@@ -24,7 +23,6 @@ export const CAT_COLORS = [
 
 // A cat, sitting: flat colour planes with a little gloss and shade, and its coat's markings.
 export const CatAnim: PetAnimation = ({ state, muted, outfit, color }) => {
-  const blink = useBlink(state);
   const { FUR, FUR_DARK, STRIPE, BELLY, pattern } = CAT_COLORS.find((c) => c.id === color) ?? CAT_COLORS[0];
   const line = { stroke: outline(FUR), strokeWidth: LINE_W };
   const tail = "M88 84 C112 86 116 58 102 54";
@@ -123,7 +121,6 @@ export const CatAnim: PetAnimation = ({ state, muted, outfit, color }) => {
         <circle cx="58.8" cy="47.3" r="0.8" fill="#fff" opacity="0.8" />
         <FrontFace
           state={state}
-          blink={blink}
           muted={muted}
           noBlush={outfit?.face === "cheeks"}
           eyeY={42}

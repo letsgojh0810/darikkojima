@@ -66,40 +66,29 @@ export const SLEEP_HEAD = "translate(-5 21) rotate(-8 60 42)";
  */
 export function FrontFace({
   state,
-  blink,
   eyeY,
   mouthY,
   neutralMouth,
   muted,
   noBlush,
-  halo,
 }: {
   state: PetState;
-  blink: boolean;
   eyeY: number;
   mouthY: number;
   neutralMouth: ReactNode;
   muted?: boolean;
   /** the heart stickers (outfit "cheeks") take the blush's place */
   noBlush?: boolean;
-  /** a light rim under closed eyes and brows so the lines still read on a dark coat */
-  halo?: string;
 }) {
-  const closed = state === "sleep" || blink;
+  // the eyes close only in sleep: no blinking, and a click gets wide happy eyes rather than ^^
+  const closed = state === "sleep";
   const joy = state === "hover" || state === "click" || state === "drag";
   const nag = state === "nag";
-  const stroke = (d: string) => (
-    <>
-      {halo && <path d={d} {...line} stroke={halo} strokeWidth="3.8" />}
-      <path d={d} {...line} />
-    </>
-  );
+  const stroke = (d: string) => <path d={d} {...line} />;
 
   const eye = (x: number) =>
     closed ? (
       stroke(`M${x - 4} ${eyeY + 1} q4 3 8 0`)
-    ) : state === "click" ? (
-      stroke(`M${x - 4} ${eyeY + 2} q4 -6 8 0`)
     ) : (
       <>
         <ellipse cx={x} cy={eyeY} rx={joy || nag ? 3.6 : 3.3} ry={joy || nag ? 4.6 : 4.3} fill={INK} />

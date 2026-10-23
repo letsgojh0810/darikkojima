@@ -54,10 +54,27 @@ export interface Settings {
   calendarDigest: boolean;
 }
 
-/** the turtle became the AI bot (0.2.1): whoever had it picked gets the bot, keeping the name and clothes given to it */
+/** coat colours that were renamed: the dog's colours became breeds (0.2.6), the tabby cat became the calico (0.2.5) */
+const RENAMED_COLORS: Record<string, Record<string, string>> = {
+  dog: { golden: "corgi", jindo: "bichon", choco: "poodle", black: "pom" },
+  cat: { tabby: "calico" },
+};
+
+/**
+ * The turtle became the AI bot (0.2.1): whoever had it picked gets the bot, keeping the name and clothes given to it.
+ * A renamed coat colour moves to its new name.
+ */
 export function migrateSettings(s: Settings): Settings {
   const { turtle, ...profiles } = s.petProfiles;
-  if (s.pet !== "turtle" && !turtle) return s;
+  let changed = false;
+  for (const [pet, renames] of Object.entries(RENAMED_COLORS)) {
+    const to = renames[profiles[pet]?.color ?? ""];
+    if (to) {
+      profiles[pet] = { ...profiles[pet], color: to };
+      changed = true;
+    }
+  }
+  if (s.pet !== "turtle" && !turtle && !changed) return s;
   if (turtle && !profiles.robot) profiles.robot = { name: turtle.name, outfit: turtle.outfit };
   return { ...s, pet: s.pet === "turtle" ? "robot" : s.pet, petProfiles: profiles };
 }
@@ -91,6 +108,6 @@ export const defaultSettings: Settings = {
   lunch: { start: "12:00", end: "13:00" },
   icsUrls: [],
   icsNames: {},
-  calendarLeadMin: 10,
+  calendarLeadMin: 30,
   calendarDigest: true,
 };
