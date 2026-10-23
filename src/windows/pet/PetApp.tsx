@@ -24,6 +24,7 @@ import {
   reminderMessages,
   scheduleMessage,
   nextWeek,
+  todayMessage,
   weekMessage,
 } from "../../messages/ko";
 import { idleSeconds, isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
@@ -176,8 +177,7 @@ export function PetApp() {
       setLunchMenus(loaded.lunchMenus);
       setPetProfiles(loaded.petProfiles);
       setPetLabel(loaded.petLabel);
-      applyAppearance(loaded.theme, loaded.accent);
-      loadProgress().then((p) => {
+      applyAppearance(loaded.theme, loaded.accent);      loadProgress().then((p) => {
         if (cancelled) return;
         progressRef.current = p;
         setProgress(p);
@@ -220,19 +220,21 @@ export function PetApp() {
       const firstFetch = cal.start();
       moments.start();
 
-      // greet on start, but wait (at most 5s) for the calendar so the first event can be named
-      if (loaded.moments.greeting && !greetedRecently()) {
+      // greet on start, and/or list today's events, but wait (at most 5s) for the calendar so events can be named
+      const greet = loaded.moments.greeting;
+      const digest = loaded.calendarDigest;
+      if ((greet || digest) && !greetedRecently()) {
         localStorage.setItem("lastGreetAt", String(Date.now()));
         Promise.race([firstFetch, new Promise((done) => setTimeout(done, 5000))]).then(async () => {
-          if (cancelled) return;
-          if (await s!.canNotify("greeting")) {
-            addNote({
-              key: "h:greeting",
-              kind: "hello",
-              message: greetingMessage(new Date(), cal!.nextEventToday(), Math.random, levelRef.current),
-            });
+          if (cancelled || !(await s!.canNotify("greeting"))) return;
+          const left = digest ? cal!.eventsLeftToday() : [];
+          if (greet) {
+            // the list below names the first event already, so the greeting does not
+            const first = left.length ? undefined : cal!.nextEventToday();
+            addNote({ key: "h:greeting", kind: "hello", message: greetingMessage(new Date(), first, Math.random, levelRef.current) });
             gain("greet");
           }
+          if (left.length) addNote({ key: "h:today", kind: "hello", message: todayMessage(left) });
         });
       }
     });

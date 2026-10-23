@@ -14,6 +14,7 @@ import {
   nextWeek,
   scheduleMessage,
   sharedLines,
+  todayMessage,
   weekMessage,
 } from "./ko";
 
@@ -79,6 +80,11 @@ describe("asking the pet", () => {
     const msg = weekMessage(many, true);
     expect(msg.split("\n")).toHaveLength(1 + 6 + 1);
     expect(msg).toContain("외 2개");
+  });
+
+  it("lists what is left today for the start-up digest, without weekdays", () => {
+    const at = (h: number) => new Date(2026, 9, 23, h, 0);
+    expect(todayMessage([{ title: "주간회의", start: at(10) }, { title: "1:1", start: at(15) }])).toBe("오늘 남은 일정은 2개예요\n10시 주간회의\n15시 1:1");
   });
 
   it("names the next event of the day, or says there is none / no calendar", () => {

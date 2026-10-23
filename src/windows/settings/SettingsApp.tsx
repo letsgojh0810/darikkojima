@@ -502,10 +502,9 @@ export function SettingsApp() {
           </Group>
 
           <Group title={t.addCalendar}>
+            {/* name and address share one row, so two calendars still fit without scrolling */}
             <div className="row">
-              <input className="grow" value={newCalName} maxLength={20} placeholder={t.calNamePlaceholder} aria-label={t.calNamePlaceholder} onChange={(e) => setNewCalName(e.target.value)} />
-            </div>
-            <div className="row">
+              <input className="cal-name-input" value={newCalName} maxLength={20} placeholder={t.calNameShort} aria-label={t.calNamePlaceholder} onChange={(e) => setNewCalName(e.target.value)} />
               <input
                 className="grow"
                 value={url}
@@ -527,6 +526,9 @@ export function SettingsApp() {
                 <NumberField value={s.calendarLeadMin} min={1} max={120} onCommit={(n) => commitNow({ calendarLeadMin: n })} />
                 {t.leadUnit}
               </span>
+            </Row>
+            <Row label={t.digest}>
+              <Switch checked={s.calendarDigest} label={t.digest} onChange={(v) => commitNow({ calendarDigest: v })} />
             </Row>
           </Group>
         </div>

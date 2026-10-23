@@ -50,6 +50,8 @@ export interface Settings {
   /** names given to calendars ("내 캘린더", "팀 캘린더"), by URL; a missing one shows the URL's host */
   icsNames: Record<string, string>;
   calendarLeadMin: number;
+  /** when the app starts, list what is left on today's calendar */
+  calendarDigest: boolean;
 }
 
 /** the turtle became the AI bot (0.2.1): whoever had it picked gets the bot, keeping the name and clothes given to it */
@@ -90,4 +92,5 @@ export const defaultSettings: Settings = {
   icsUrls: [],
   icsNames: {},
   calendarLeadMin: 10,
+  calendarDigest: true,
 };

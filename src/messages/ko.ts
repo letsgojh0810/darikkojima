@@ -416,14 +416,22 @@ const weekLines = {
   none: ["다음 주에는 아직 일정이 없어요. 여유로운 한 주가 되겠네요", "다음 주 캘린더는 아직 비어 있어요"],
 };
 
-/** Answer to "다음 주 일정 알려줘": how many, then a line per event ("월 10:30 주간회의"), the rest counted. */
+/** a head line, then one line per event (with its weekday when `withDay`), the rest counted */
+function eventList(head: string, events: { title: string; start: Date }[], withDay: boolean) {
+  const lines = events.slice(0, WEEK_SHOWN).map((e) => `${withDay ? `${dayLabels[e.start.getDay()]} ` : ""}${clock(e.start)} ${shorten(e.title)}`);
+  const more = events.length > WEEK_SHOWN ? [`외 ${events.length - WEEK_SHOWN}개`] : [];
+  return [head, ...lines, ...more].join("\n");
+}
+
+/** Answer to "다음 주 일정 알려줘": how many, then a line per event ("월 10시 30분 주간회의"), the rest counted. */
 export function weekMessage(events: { title: string; start: Date }[], connected: boolean, rand: () => number = Math.random) {
   if (!connected) return pick(scheduleLines.notConnected, rand);
   if (!events.length) return pick(weekLines.none, rand);
-  const lines = events.slice(0, WEEK_SHOWN).map((e) => `${dayLabels[e.start.getDay()]} ${clock(e.start)} ${shorten(e.title)}`);
-  const more = events.length > WEEK_SHOWN ? [`외 ${events.length - WEEK_SHOWN}개`] : [];
-  return [`다음 주 일정은 ${events.length}개예요`, ...lines, ...more].join("\n");
+  return eventList(`다음 주 일정은 ${events.length}개예요`, events, true);
 }
+
+/** Said when the app starts (일정 → "앱을 켤 때 오늘 일정 알려주기"): what is still ahead today, one per line. */
+export const todayMessage = (events: { title: string; start: Date }[]) => eventList(`오늘 남은 일정은 ${events.length}개예요`, events, false);
 
 /* ───────── 점심 룰렛 ───────── */
 
@@ -683,6 +691,7 @@ export const settingsText = {
   leadGroup: "알림 시점",
   lead: "일정 시작 전에 알려줘요",
   leadUnit: "분 전",
+  digest: "앱을 켤 때 오늘 일정 알려주기",
   urlPlaceholder: "https://로 시작하는 주소",
   add: "추가하기",
   remove: "삭제",
@@ -696,6 +705,7 @@ export const settingsText = {
   checking: "확인하는 중…",
   notChecked: "아직 확인하지 않았어요",
   calNamePlaceholder: "이름 (예: 내 캘린더, 팀 캘린더)",
+  calNameShort: "이름 (선택)",
   upcomingTitle: "앞으로 7일 일정",
   upcomingNoCal: "캘린더를 추가하면 앞으로 7일 동안의 일정이 여기 보여요",
   upcomingNone: "앞으로 7일 동안은 일정이 없어요",
