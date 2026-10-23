@@ -96,12 +96,12 @@ const BREEDS: Record<string, Breed> = {
     mouthY: 57,
     mouth: wMouth,
   },
-  // toy poodle: a curly cloud of a head with a topknot, long curly ears, a lighter muzzle, a pompom tail
+  // toy poodle: a round curly cloud of a head, long curly ears, a lighter muzzle, a pompom tail
   poodle: {
     head: (c) => (
       <>
         <Cloud blobs={[[33, 44, 6], [31, 51, 6.2], [33, 58, 5.5], [87, 44, 6], [89, 51, 6.2], [87, 58, 5.5]]} fill={c.EAR} edge={outline(c.EAR)} />
-        <Cloud blobs={[...ring(60, 41, 21, 18, 14, 7), [60, 41, 20], [60, 18, 7.5]]} fill={c.FUR} edge={outline(c.FUR)} />
+        <Cloud blobs={[...ring(60, 41, 21, 18, 14, 7), [60, 41, 20]]} fill={c.FUR} edge={outline(c.FUR)} />
         <Gloss x={50} y={27} rx={8} ry={3.6} />
         <ellipse cx="60" cy="52" rx="10" ry="7.5" fill={c.MUZZLE} opacity="0.85" />
         {nose}

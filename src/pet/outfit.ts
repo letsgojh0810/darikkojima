@@ -113,6 +113,6 @@ export const ANCHORS: Record<string, Anchors> = {
 export const DOG_ANCHORS: Record<string, Anchors> = {
   corgi: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 32.5, y: 47 }, { x: 87.5, y: 47 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 66 }, size: 1 },
   bichon: { top: { x: 60, y: 12 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 27, y: 45 }, { x: 93, y: 45 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 69 }, size: 1 },
-  poodle: { top: { x: 60, y: 16 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 31, y: 44 }, { x: 89, y: 44 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 66 }, size: 1 },
+  poodle: { top: { x: 60, y: 19 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 31, y: 44 }, { x: 89, y: 44 }], mouth: { x: 60, y: 53 }, neck: { x: 60, y: 66 }, size: 1 },
   pom: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 46 }, { x: 87, y: 46 }], mouth: { x: 60, y: 51.5 }, neck: { x: 60, y: 67 }, size: 1 },
 };
