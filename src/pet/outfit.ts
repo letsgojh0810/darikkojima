@@ -46,6 +46,7 @@ export const ITEMS: Item[] = [
   { id: "heart", slot: "face", level: 10 },
   { id: "monocle", slot: "face", level: 10 },
   { id: "medal", slot: "neck", level: 10 },
+  { id: "shades", slot: "face", level: 10 },
   { id: "drop", slot: "head", title: "water10" },
   { id: "goggles", slot: "face", title: "water100" },
   { id: "book", slot: "head", title: "posture50" },

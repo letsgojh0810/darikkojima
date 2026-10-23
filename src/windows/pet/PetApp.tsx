@@ -27,7 +27,7 @@ import {
   todayMessage,
   weekMessage,
 } from "../../messages/ko";
-import { idleSeconds, isFullscreenBusy, openSettings, quitApp, setHitRect } from "../../native";
+import { idleSeconds, isFullscreenBusy, mouseHeld, openSettings, quitApp, setHitRect } from "../../native";
 import { pets } from "../../pet/anim/pets";
 import type { PetState } from "../../pet/anim/types";
 import { bringOnScreen, FORCE_WINDOW_MS, TOO_HIDDEN, visibleFraction, type Rect } from "../../pet/edges";
@@ -67,8 +67,15 @@ export function PetApp() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [lunch, setLunch] = useState<{ at: number } | null>(null);
   const [activity, setActivity] = useState(0);
+  // the pet falls asleep only while the desk is empty, and wakes the moment anyone touches it
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    const t = setInterval(async () => setAway((await idleSeconds()) >= AWAY_AFTER_SEC), 10_000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => setAway(false), [activity]);
   // only reminders put the pet in its nagging mood; greetings and the lunch bubble keep it friendly
-  const awake = usePetState(notices.some((n) => n.kind === "reminder"), activity);
+  const awake = usePetState(notices.some((n) => n.kind === "reminder"), away);
   // read by the chatter timer, which outlives renders
   const sleepingRef = useRef(false);
   sleepingRef.current = awake === "sleep";
@@ -117,10 +124,17 @@ export function PetApp() {
   const quipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [dragging, setDragging] = useState(false);
+  // pressing and holding without moving wriggles like a drag; a release after that is not a click
+  const [holding, setHolding] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const stopHold = () => {
+    clearTimeout(holdTimer.current);
+    setHolding(false);
+  };
   const [edgeWorry, setEdgeWorry] = useState(false);
   const petRef = useRef<HTMLDivElement>(null);
   const [forced, setForced] = useState<PetState | null>(null); // dev-only: pins an animation so it can be looked at
-  const state: PetState = forced ?? (dragging ? (edgeWorry ? "nag" : "drag") : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
+  const state: PetState = forced ?? (dragging ? (edgeWorry ? "nag" : "drag") : holding ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
   const [petId, setPetId] = useState(defaultSettings.pet);
   const petIdRef = useRef(petId);
   petIdRef.current = petId;
@@ -439,6 +453,7 @@ export function PetApp() {
     let dragTimer: ReturnType<typeof setTimeout>;
     let ignoreUntil = Infinity; // the move that restores the saved position is not a drag
     let moving = false;
+    let dragSeq = 0;
     let lastPush = 0;
     let at = { x: 0, y: 0 };
     let screens: Rect[] = [];
@@ -492,19 +507,28 @@ export function PetApp() {
       at = { x: payload.x, y: payload.y };
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => savePetPos(at), 500);
-      // there is no mouse-up after startDragging, so "the window stopped moving" ends the drag
+      // there is no mouse-up after startDragging: once the window stops moving, the drag ends when the button is let go
+      // (held still, the pet keeps wriggling in the hand)
       if (Date.now() < ignoreUntil) return;
       if (!moving) loadScreens(); // monitors may have been plugged in or out since the last drag
       moving = true;
       setDragging(true);
       setEdgeWorry(tooHidden()); // the pet looks uneasy while it is being pushed into the corner
       clearTimeout(dragTimer);
-      dragTimer = setTimeout(() => {
+      const seq = ++dragSeq; // a newer move takes over; this check is then stale
+      const end = async () => {
+        const held = await mouseHeld().catch(() => false);
+        if (seq !== dragSeq) return;
+        if (held) {
+          dragTimer = setTimeout(end, 100);
+          return;
+        }
         moving = false;
         setDragging(false);
         setEdgeWorry(false);
         onDrop();
-      }, 250);
+      };
+      dragTimer = setTimeout(end, 250);
     });
     return () => {
       clearTimeout(saveTimer);
@@ -651,21 +675,31 @@ export function PetApp() {
         onMouseLeave={() => {
           setHover(false);
           pressAt.current = null;
+          stopHold();
         }}
         onMouseDown={(e) => {
-          if (e.button === 0) pressAt.current = { x: e.clientX, y: e.clientY };
+          if (e.button !== 0) return;
+          pressAt.current = { x: e.clientX, y: e.clientY };
+          // a short click never gets here: the wriggle starts only once the press has lasted a moment
+          holdTimer.current = setTimeout(() => {
+            setHolding(true);
+            setActivity((n) => n + 1);
+          }, 300);
         }}
         onMouseMove={(e) => {
           const p = pressAt.current;
           if (!p || e.buttons !== 1 || Math.hypot(e.clientX - p.x, e.clientY - p.y) < 4) return;
           pressAt.current = null;
+          stopHold();
           setActivity((n) => n + 1);
           getCurrentWindow().startDragging();
         }}
         onMouseUp={(e) => {
           if (e.button !== 0 || !pressAt.current) return;
           pressAt.current = null;
-          poke();
+          const held = holding;
+          stopHold();
+          if (!held) poke();
         }}
         onContextMenu={(e) => {
           e.preventDefault();

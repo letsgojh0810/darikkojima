@@ -38,9 +38,7 @@ const dayOrder = [1, 2, 3, 4, 5, 6, 0];
 const tabs = [
   { id: "remind", label: t.tabRemind },
   { id: "calendar", label: t.tabCalendar },
-  { id: "talk", label: t.tabTalk },
   { id: "pet", label: t.tabPet },
-  { id: "grow", label: t.tabGrow },
   { id: "general", label: t.tabGeneral },
   { id: "dev", label: devText.tab },
 ] as const;
@@ -120,6 +118,14 @@ export function SettingsApp() {
   const [badUrl, setBadUrl] = useState<string>();
   const [newText, setNewText] = useState("");
   const [newMenu, setNewMenu] = useState("");
+  // the lunch menu list opens in a sheet over the window, so the 알림 tab keeps one line for it
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
   const [tab, setTab] = useState<TabId>("remind");
   const [version, setVersion] = useState("");
   useEffect(() => {
@@ -158,7 +164,6 @@ export function SettingsApp() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmAll, setConfirmAll] = useState(false);
   const [slot, setSlot] = useState<Slot>("head");
-  const [hoverPet, setHoverPet] = useState<string | null>(null);
   const barPct = lv.max ? 100 : (lv.into / lv.need) * 100;
   const Preview = pets[s?.pet ?? ""] ?? pets.cat;
 
@@ -331,6 +336,34 @@ export function SettingsApp() {
               <Row label={t.autostart}>
                 <Switch checked={auto} label={t.autostart} onChange={setAutostart} />
               </Row>
+              {/* irreversible, so two steps: the first press only unfolds the warning */}
+              {!confirmReset ? (
+                <Row label={t.resetLabel}>
+                  <button className="remove" onClick={() => setConfirmReset(true)}>
+                    {t.resetOpen}
+                  </button>
+                </Row>
+              ) : (
+                <div className="danger-box" role="alertdialog" aria-label={t.resetTitle}>
+                  <strong>{t.resetTitle}</strong>
+                  <p>{t.resetWarn}</p>
+                  <div className="actions">
+                    <button className="secondary" onClick={() => setConfirmReset(false)}>
+                      {t.resetKeep}
+                    </button>
+                    <button
+                      className="danger-btn"
+                      onClick={() => {
+                        emit("progress-reset"); // the pet window owns the record; it resets and saves it
+                        setProgress(emptyProgress(new Date()));
+                        setConfirmReset(false);
+                      }}
+                    >
+                      {t.resetConfirm}
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* irreversible, so two steps like the closeness reset: the first press only unfolds the warning */}
               {!confirmAll ? (
                 <Row label={t.resetAllLabel}>
@@ -356,6 +389,40 @@ export function SettingsApp() {
           </div>
 
           <div className="col">
+            {/* how the pet sits on the desktop; the position reset acts at once, like the tray item */}
+            <section>
+              <div className="h2row">
+                <h2>{t.petDisplay}</h2>
+                <button className="text-btn" onClick={() => emit("reset-position")}>
+                  {t.resetPosition}
+                </button>
+              </div>
+              <div className="group">
+                <Row label={t.petSize}>
+                  <input
+                    type="range"
+                    aria-label={t.petSize}
+                    min={50}
+                    max={150}
+                    step={5}
+                    value={Math.round(s.petScale * 100)}
+                    style={{ "--pct": `${s.petScale * 100 - 50}%` } as CSSProperties}
+                    onChange={(e) => update({ ...s, petScale: Number(e.target.value) / 100 })}
+                  />
+                  <span className="pct">{Math.round(s.petScale * 100)}%</span>
+                </Row>
+                <Row label={t.labelTitle} stack>
+                  <div className="seg" role="radiogroup" aria-label={t.labelTitle}>
+                    {(Object.keys(t.labelOptions) as Settings["petLabel"][]).map((k) => (
+                      <button key={k} role="radio" aria-checked={s.petLabel === k} onClick={() => update({ ...s, petLabel: k })}>
+                        {t.labelOptions[k]}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+              </div>
+            </section>
+
             <Group title={t.about}>
               <div className="about">
                 <img src="/favicon.svg" alt="" width="48" height="48" />
@@ -417,6 +484,24 @@ export function SettingsApp() {
               </button>
             </div>
           </Group>
+
+          {/* the other things the pet says first: on/off chips, the full sentence on hover */}
+          <Group title={t.talkTitle}>
+            <Row desc={t.talkHint} />
+            <div className="choices">
+              {(Object.keys(t.moments) as (keyof typeof t.moments)[]).map((k) => (
+                <button
+                  key={k}
+                  className="choice toggle"
+                  aria-pressed={s.moments[k]}
+                  title={t.momentHints[k]}
+                  onClick={() => update({ ...s, moments: { ...s.moments, [k]: !s.moments[k] } })}
+                >
+                  {t.moments[k]}
+                </button>
+              ))}
+            </div>
+          </Group>
         </div>
 
         <div className="col">
@@ -437,9 +522,56 @@ export function SettingsApp() {
             <Row label={t.lunch} stack>
               <TimeRange start={s.lunch.start} end={s.lunch.end} onChange={(start, end) => update({ ...s, lunch: { start, end } })} />
             </Row>
+            <Row label={t.lunchMenus} desc={t.lunchMenuCount(s.lunchMenus.length)}>
+              <button className="remove check" onClick={() => setMenuOpen(true)}>
+                {t.edit}
+              </button>
+            </Row>
           </Group>
         </div>
       </div>
+      )}
+
+      {menuOpen && (
+        <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
+          <div className="sheet" role="dialog" aria-modal="true" aria-label={t.lunchMenus}>
+            <h2>{t.lunchMenus}</h2>
+            <div className="group">
+              <div className="row">
+                <input
+                  className="grow"
+                  autoFocus
+                  value={newMenu}
+                  maxLength={20}
+                  placeholder={t.menuPlaceholder}
+                  onChange={(e) => setNewMenu(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addMenu()}
+                />
+                <button className="primary" disabled={!newMenu.trim()} onClick={addMenu}>
+                  {t.add}
+                </button>
+              </div>
+              <div className="chips">
+                {s.lunchMenus.map((m) => (
+                  <span className="chip" key={m}>
+                    {m}
+                    <button aria-label={`${m} ${t.remove}`} onClick={() => update({ ...s, lunchMenus: s.lunchMenus.filter((x) => x !== m) })}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="sheet-actions">
+              <button className="remove" onClick={() => update({ ...s, lunchMenus: defaultLunchMenus })}>
+                {t.menuReset}
+              </button>
+              <button className="secondary" onClick={() => setMenuOpen(false)}>
+                {t.done}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {tab === "calendar" && (
@@ -592,39 +724,37 @@ export function SettingsApp() {
       </div>
       )}
 
+      {/* one place to dress up the pet: who it is and what it wears side by side, closeness under its picture */}
       {tab === "pet" && (
-        <section className="pet-tab">
-          {/* the reset sits on the title row so the tab does not grow; it acts at once, like the tray item */}
-          <div className="h2row">
-            <h2>{t.pickPet}</h2>
-            <button className="text-btn" onClick={() => emit("reset-position")}>
-              {t.resetPosition}
-            </button>
-          </div>
-          <div className="pets">
-            {petIds.map((id) => {
-              const Anim = pets[id];
-              return (
-                // no label, so the pets answer instead: the picked one smiles, one under the mouse hops once
-                <button
-                  key={id}
-                  className="pet-card"
-                  aria-pressed={s.pet === id}
-                  aria-label={petNames[id]}
-                  title={petNames[id]}
-                  onClick={() => update({ ...s, pet: id })}
-                  onMouseEnter={() => setHoverPet(id)}
-                  onMouseLeave={() => setHoverPet(null)}
-                >
-                  <Anim state={hoverPet === id ? "click" : s.pet === id ? "hover" : "idle"} color={s.petProfiles[id]?.color} />
-                </button>
-              );
-            })}
-          </div>
+        <div className="cols">
+          <div className="col">
+            <div className="outfit-preview" title={t.levelHint}>
+              <div className="preview-pet" aria-hidden>
+                <Preview state="idle" outfit={wearable(s.petProfiles[s.pet]?.outfit, lv.level, titles)} color={s.petProfiles[s.pet]?.color} />
+              </div>
+              <div className="lvline">
+                <strong>Lv.{lv.level}</strong>
+                <div className="bar" role="progressbar" aria-label={t.level} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(barPct)}>
+                  <span style={{ width: `${barPct}%` }} />
+                </div>
+                <span className="desc">{lv.max ? t.levelMax : t.levelNext(lv.need - lv.into)}</span>
+              </div>
+            </div>
 
-          <div className="cols">
-            <div className="col">
-              <Group title={t.profile}>
+            <section>
+              <div className="group">
+                <Row label={t.petKind}>
+                  <div className="kinds" role="radiogroup" aria-label={t.petKind}>
+                    {petIds.map((id) => {
+                      const Anim = pets[id];
+                      return (
+                        <button key={id} role="radio" className="kind" aria-checked={s.pet === id} aria-label={petNames[id]} title={petNames[id]} onClick={() => update({ ...s, pet: id })}>
+                          <Anim state="idle" color={s.petProfiles[id]?.color} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Row>
                 <Row label={t.petName}>
                   <input
                     className="name-input"
@@ -651,88 +781,8 @@ export function SettingsApp() {
                     ))}
                   </div>
                 </Row>
-              </Group>
-            </div>
-
-            <div className="col">
-              <Group title={t.petSize}>
-                <div className="row">
-                  <input
-                    type="range"
-                    aria-label={t.petSize}
-                    min={50}
-                    max={150}
-                    step={5}
-                    value={Math.round(s.petScale * 100)}
-                    style={{ "--pct": `${s.petScale * 100 - 50}%` } as CSSProperties}
-                    onChange={(e) => update({ ...s, petScale: Number(e.target.value) / 100 })}
-                  />
-                  <span className="pct">{Math.round(s.petScale * 100)}%</span>
-                </div>
-              </Group>
-
-              <Group title={t.labelTitle}>
-                <div className="row">
-                  <div className="seg" role="radiogroup" aria-label={t.labelTitle}>
-                    {(Object.keys(t.labelOptions) as Settings["petLabel"][]).map((k) => (
-                      <button key={k} role="radio" aria-checked={s.petLabel === k} onClick={() => update({ ...s, petLabel: k })}>
-                        {t.labelOptions[k]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </Group>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {tab === "grow" && (
-        <div className="cols">
-          <div className="col">
-            {/* what the draft outfit looks like, before 저장 */}
-            <div className="outfit-preview" aria-hidden>
-              <Preview state="idle" outfit={wearable(s.petProfiles[s.pet]?.outfit, lv.level, titles)} color={s.petProfiles[s.pet]?.color} />
-            </div>
-
-            <Group title={t.level}>
-              <div className="row stack" title={t.levelHint}>
-                <div className="lvline">
-                  <strong>Lv.{lv.level}</strong>
-                  <span className="desc">{lv.max ? t.levelMax : t.levelNext(lv.need - lv.into)}</span>
-                  {!confirmReset && (
-                    <button className="remove" onClick={() => setConfirmReset(true)}>
-                      {t.resetOpen}
-                    </button>
-                  )}
-                </div>
-                <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(barPct)}>
-                  <span style={{ width: `${barPct}%` }} />
-                </div>
               </div>
-              {/* irreversible, so two steps: the first press only unfolds the warning */}
-              {confirmReset && (
-                <div className="danger-box" role="alertdialog" aria-label={t.resetTitle}>
-                  <strong>{t.resetTitle}</strong>
-                  <p>{t.resetWarn}</p>
-                  <div className="actions">
-                    <button className="secondary" onClick={() => setConfirmReset(false)}>
-                      {t.resetKeep}
-                    </button>
-                    <button
-                      className="danger-btn"
-                      onClick={() => {
-                        emit("progress-reset"); // the pet window owns the record; it resets and saves it
-                        setProgress(emptyProgress(new Date()));
-                        setConfirmReset(false);
-                      }}
-                    >
-                      {t.resetConfirm}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </Group>
+            </section>
           </div>
 
           <div className="col">
@@ -785,52 +835,6 @@ export function SettingsApp() {
 
       {import.meta.env.DEV && tab === "dev" && <DevPanel s={s} />}
 
-      {tab === "talk" && (
-        <div className="cols">
-          <div className="col">
-            <Group title={t.talkTitle}>
-              {(Object.keys(t.moments) as (keyof typeof t.moments)[]).map((k) => (
-                <Row key={k} label={t.moments[k]}>
-                  <Switch checked={s.moments[k]} label={t.moments[k]} onChange={(v) => update({ ...s, moments: { ...s.moments, [k]: v } })} />
-                </Row>
-              ))}
-            </Group>
-          </div>
-
-          <div className="col">
-            <Group title={t.lunchMenus}>
-              <div className="row">
-                <input
-                  className="grow"
-                  value={newMenu}
-                  maxLength={20}
-                  placeholder={t.menuPlaceholder}
-                  onChange={(e) => setNewMenu(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addMenu()}
-                />
-                <button className="primary" disabled={!newMenu.trim()} onClick={addMenu}>
-                  {t.add}
-                </button>
-              </div>
-              <div className="chips">
-                {s.lunchMenus.map((m) => (
-                  <span className="chip" key={m}>
-                    {m}
-                    <button aria-label={`${m} ${t.remove}`} onClick={() => update({ ...s, lunchMenus: s.lunchMenus.filter((x) => x !== m) })}>
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="row">
-                <button className="remove" onClick={() => update({ ...s, lunchMenus: defaultLunchMenus })}>
-                  {t.menuReset}
-                </button>
-              </div>
-            </Group>
-          </div>
-        </div>
-      )}
 
       <footer>
         <span className="desc">{t.liveSaved}</span>

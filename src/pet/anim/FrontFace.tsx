@@ -29,8 +29,26 @@ export function outline(hex: string) {
   return `#${rgb.toString(16).padStart(6, "0")}`;
 }
 
-/** How far the head sinks (sleep) or lifts (click). */
-export const headDy = (s: PetState) => (s === "sleep" ? 3 : s === "click" ? -3 : 0);
+/** A front paw with three toe lines; className "leg" lets it paddle while dragged. */
+export function Paw({ x, b, fill, edge }: { x: number; b?: boolean; fill: string; edge: string }) {
+  return (
+    <g className={b ? "leg b" : "leg"}>
+      <ellipse cx={x} cy="90" rx="9" ry="5" fill={fill} stroke={edge} strokeWidth={LINE_W} />
+      <path d={`M${x - 3} 88.6 v3 M${x} 88 v3.6 M${x + 3} 88.6 v3`} stroke={outline(fill)} strokeWidth="0.9" strokeLinecap="round" />
+    </g>
+  );
+}
+
+/** Soft gloss on the upper left of a round head. */
+export const Gloss = ({ x, y, rx = 9, ry = 4 }: { x: number; y: number; rx?: number; ry?: number }) => (
+  <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="#fff" opacity="0.22" transform={`rotate(-18 ${x} ${y})`} />
+);
+
+/** How far the head lifts on a click. */
+export const headDy = (s: PetState) => (s === "click" ? -3 : 0);
+
+/** Asleep, the head lies low and a little tilted, chin on the paws; worn things move with it. */
+export const SLEEP_HEAD = "translate(-5 21) rotate(-8 60 42)";
 
 /**
  * Eyes, brows, cheeks, sweat and mouth for the front-facing pets (cat, dog, rabbit), centred on x=60.
@@ -44,6 +62,7 @@ export function FrontFace({
   neutralMouth,
   muted,
   noBlush,
+  halo,
 }: {
   state: PetState;
   blink: boolean;
@@ -53,34 +72,42 @@ export function FrontFace({
   muted?: boolean;
   /** the heart stickers (outfit "cheeks") take the blush's place */
   noBlush?: boolean;
+  /** a light rim under closed eyes and brows so the lines still read on a dark coat */
+  halo?: string;
 }) {
   const closed = state === "sleep" || blink;
   const joy = state === "hover" || state === "click" || state === "drag";
   const nag = state === "nag";
+  const stroke = (d: string) => (
+    <>
+      {halo && <path d={d} {...line} stroke={halo} strokeWidth="3.8" />}
+      <path d={d} {...line} />
+    </>
+  );
 
   const eye = (x: number) =>
     closed ? (
-      <path d={`M${x - 4} ${eyeY + 1} q4 3 8 0`} {...line} />
+      stroke(`M${x - 4} ${eyeY + 1} q4 3 8 0`)
     ) : state === "click" ? (
-      <path d={`M${x - 4} ${eyeY + 2} q4 -6 8 0`} {...line} />
+      stroke(`M${x - 4} ${eyeY + 2} q4 -6 8 0`)
     ) : (
       <>
-        <ellipse cx={x} cy={eyeY} rx={joy || nag ? 3.4 : 3} ry={joy || nag ? 4.4 : 4} fill={INK} />
-        <circle cx={x + 1} cy={eyeY - 1.5} r="1.1" fill="#fff" />
-        {state === "hover" && <circle cx={x - 1} cy={eyeY + 1.5} r="0.7" fill="#fff" />}
+        <ellipse cx={x} cy={eyeY} rx={joy || nag ? 3.6 : 3.3} ry={joy || nag ? 4.6 : 4.3} fill={INK} />
+        <circle cx={x + 1.15} cy={eyeY - 1.6} r="1.3" fill="#fff" />
+        <circle cx={x - 1} cy={eyeY + 1.7} r={state === "hover" ? 0.8 : 0.6} fill="#fff" opacity="0.85" />
       </>
     );
 
   return (
     <>
-      {!noBlush && <circle cx="41" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />}
-      {!noBlush && <circle cx="79" cy={eyeY + 8} r="4" fill={CHEEK} opacity={joy ? 1 : 0.65} />}
+      {!noBlush && <circle cx="41" cy={eyeY + 8} r="4.5" fill={CHEEK} opacity={joy ? 0.9 : 0.55} />}
+      {!noBlush && <circle cx="79" cy={eyeY + 8} r="4.5" fill={CHEEK} opacity={joy ? 0.9 : 0.55} />}
       {eye(50)}
       {eye(70)}
       {nag && (
         <>
-          <path d={`M44 ${eyeY - 8} L56 ${eyeY - 5}`} {...line} />
-          <path d={`M76 ${eyeY - 8} L64 ${eyeY - 5}`} {...line} />
+          {stroke(`M44 ${eyeY - 8} L56 ${eyeY - 5}`)}
+          {stroke(`M76 ${eyeY - 8} L64 ${eyeY - 5}`)}
           <path d={`M90 ${eyeY - 22} q3 4 0 6.5 q-3 -2.5 0 -6.5 z`} fill={SWEAT} />
         </>
       )}

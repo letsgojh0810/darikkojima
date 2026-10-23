@@ -1,6 +1,6 @@
 /** Accent colours to pick from in 일반 → 화면; the first is the default. Names live in messages/ko.ts accentNames. */
 export const ACCENTS: Record<string, string> = {
-  coral: "#e8603f",
+  coral: "#f17b5d",
   blue: "#3182f6",
   mint: "#12a58c",
   lavender: "#7b61f0",

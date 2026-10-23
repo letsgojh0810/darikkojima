@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { Anchors, Outfit } from "../outfit";
 import { outline } from "./FrontFace";
 
@@ -8,6 +8,21 @@ const GOLD_EDGE = "#F5B200";
 
 /** a few small shapes laid out by index (lei flowers, flower petals) */
 const along = (n: number, at: (i: number) => ReactNode) => Array.from({ length: n }, (_, i) => at(i));
+
+/** heart outline centred on (x, y), r being the half-width */
+const heartAt = (x: number, y: number, r: number) =>
+  `M${x} ${y + r} C${x - 1.7 * r} ${y}, ${x - r} ${y - 1.2 * r}, ${x} ${y - 0.35 * r} C${x + r} ${y - 1.2 * r}, ${x + 1.7 * r} ${y}, ${x} ${y + r} Z`;
+
+/** five-pointed star centred on (x, y), r the outer radius */
+const starAt = (x: number, y: number, r: number) =>
+  `M${along(10, (i) => {
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    const d = i % 2 ? r * 0.45 : r;
+    return `${(x + d * Math.cos(a)).toFixed(2)} ${(y + d * Math.sin(a)).toFixed(2)}`;
+  }).join(" L")} Z`;
+
+/** a thin outline in a darker shade of the piece's own colour, like the pets' (FrontFace outline) */
+const edge = (fill: string, width = 1) => ({ fill, stroke: outline(fill), strokeWidth: width, strokeLinejoin: "round" as const });
 
 /** a stem from the side of the head up to the front of its top, with paired leaves; the right branch is this one mirrored */
 function laurelBranch() {
@@ -32,15 +47,28 @@ function laurelBranch() {
   );
 }
 
+/** hats that cover the crown of the head: the robot's antenna hides under these */
+export const HATS = new Set(["beanie", "cap", "chef", "wizard", "nightcap"]);
+
 /** head pieces, drawn with (0, 0) at the top of the head; they sit about 6 units down onto it */
 const HEAD: Record<string, ReactNode> = {
+  // a knit hat: ribbed crown, a folded cuff and a fluffy pompom (outline circles under, fill circles over)
   beanie: (
     <>
-      <path d="M-21 7 C-22 -16 22 -16 21 7 Z" fill="#3182F6" />
-      <path d="M-9 -8 C-7 -2 -7 2 -7 6 M9 -8 C7 -2 7 2 7 6 M0 -11 V6" fill="none" stroke="#1B64DA" strokeWidth="1.6" opacity="0.55" />
-      <rect x="-23" y="2" width="46" height="8" rx="4" fill="#1B64DA" />
-      <circle cy="-14" r="5" fill="#fff" />
-      <circle cx="-1.5" cy="-15.5" r="1.8" fill="#F2F4F6" />
+      <path d="M-21 7 C-22 -15.5 22 -15.5 21 7 Z" {...edge("#4A8FF7", 1)} />
+      <path d="M-14 6 C-15 -2 -12 -7 -7.5 -9.5 M-7 6 C-7.5 -2 -5 -8 -2.5 -10.6 M0 6 V-11 M7 6 C7.5 -2 5 -8 2.5 -10.6 M14 6 C15 -2 12 -7 7.5 -9.5" fill="none" stroke="#2D6FD9" strokeWidth="1.1" strokeLinecap="round" opacity="0.5" />
+      <path d="M-16 -2 C-15 -7 -11 -10 -7 -11" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.35" />
+      {[["#9AA6B5", 1.6], ["#fff", 0]].map(([c, grow]) => (
+        <g key={c} fill={c as string}>
+          <circle cy="-14.5" r={4.6 + Number(grow) / 2} />
+          {along(9, (i) => (
+            <circle key={i} cx={4.4 * Math.sin((i * 2 * Math.PI) / 9)} cy={-14.5 - 4.4 * Math.cos((i * 2 * Math.PI) / 9)} r={1.9 + Number(grow) / 2} />
+          ))}
+        </g>
+      ))}
+      <circle cx="-1.8" cy="-16.4" r="1.8" fill="#EEF1F5" />
+      <rect x="-23" y="1.5" width="46" height="9" rx="4.5" {...edge("#2F74E0", 1)} />
+      <path d={along(14, (i) => `M${-19.5 + i * 3} 3.6 v4.8`).join(" ")} stroke="#1D5BC0" strokeWidth="1" strokeLinecap="round" opacity="0.55" />
     </>
   ),
   flower: (
@@ -52,13 +80,20 @@ const HEAD: Record<string, ReactNode> = {
       <circle r="2.4" fill={GOLD} />
     </g>
   ),
+  // a baseball cap seen from the front: six-panel crown, a badge, and the brim curving down toward us
   cap: (
     <>
-      <path d="M-20 6 C-20 -15 20 -15 20 6 Z" fill="#F04452" />
-      <path d="M0 -12 V4" stroke="#D93645" strokeWidth="1.4" />
-      <circle cy="-12" r="2.2" fill="#D93645" />
-      <rect x="-6" y="-6" width="12" height="7" rx="2" fill="#fff" />
-      <path d="M-21 4 Q0 9 21 4 L23 9 Q0 17 -23 9 Z" fill="#D93645" />
+      <path d="M-20.5 6 C-21 -15 21 -15 20.5 6 Z" {...edge("#F04452", 1)} />
+      <path d="M0 -10.6 V5 M-10.5 -7.5 C-13 -3 -13.5 1 -13.5 5.5 M10.5 -7.5 C13 -3 13.5 1 13.5 5.5" fill="none" stroke="#C92C3A" strokeWidth="1" strokeLinecap="round" opacity="0.55" />
+      <path d="M-15.5 -1 C-14.5 -6 -11 -9 -6.5 -10.2" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.35" />
+      <circle cx="-7" cy="-4" r="0.7" fill="#C92C3A" />
+      <circle cx="7" cy="-4" r="0.7" fill="#C92C3A" />
+      <ellipse cy="-10.8" rx="2.6" ry="1.5" {...edge("#E03444", 0.8)} />
+      <rect x="-5.5" y="-5.5" width="11" height="7.5" rx="2.4" {...edge("#fff", 0.8)} />
+      <path d={starAt(0, -1.7, 2.7)} fill="#F04452" />
+      {/* the brim points at us: thick in the middle, thinning to nothing where it meets the sides of the crown */}
+      <path d="M-21 4.5 Q0 8.5 21 4.5 Q19 10.5 0 13 Q-19 10.5 -21 4.5 Z" {...edge("#D93645", 1)} />
+      <path d="M-15 7.6 Q0 12 15 7.6" fill="none" stroke="#fff" strokeWidth="0.8" strokeDasharray="1.6 1.4" opacity="0.6" />
     </>
   ),
   crown: (
@@ -143,21 +178,6 @@ const HEAD: Record<string, ReactNode> = {
     </>
   ),
 };
-
-/** heart outline centred on (x, y), r being the half-width */
-const heartAt = (x: number, y: number, r: number) =>
-  `M${x} ${y + r} C${x - 1.7 * r} ${y}, ${x - r} ${y - 1.2 * r}, ${x} ${y - 0.35 * r} C${x + r} ${y - 1.2 * r}, ${x + 1.7 * r} ${y}, ${x} ${y + r} Z`;
-
-/** five-pointed star centred on (x, y), r the outer radius */
-const starAt = (x: number, y: number, r: number) =>
-  `M${along(10, (i) => {
-    const a = (i * Math.PI) / 5 - Math.PI / 2;
-    const d = i % 2 ? r * 0.45 : r;
-    return `${(x + d * Math.cos(a)).toFixed(2)} ${(y + d * Math.sin(a)).toFixed(2)}`;
-  }).join(" L")} Z`;
-
-/** a thin outline in a darker shade of the piece's own colour, like the pets' (FrontFace outline) */
-const edge = (fill: string, width = 1) => ({ fill, stroke: outline(fill), strokeWidth: width, strokeLinejoin: "round" as const });
 
 /**
  * A necklace hanging around the neck: `n` points from x = -w to w, the ends at `top` (above the chin line, hidden
@@ -353,12 +373,14 @@ const FACE_EXTRAS: Record<string, (a: Anchors) => ReactNode> = {
     [cheekOf(l, -1), cheekOf(r, 1)].flatMap((c, i) =>
       [[-2.6, -1.2], [0, 0.8], [2.6, -0.8]].map(([dx, dy], j) => <circle key={`${i}${j}`} cx={c.x + dx * k} cy={c.y + dy * k} r={0.85 * k} fill="#B07A52" />),
     ),
+  // wide and deep enough to cover the whole muzzle; the top edge stays just under the eyes
   mask: ({ mouth: m, ears: [el, er], size: k }) => (
     <>
-      <path d={`M${m.x - 12 * k} ${m.y - 3 * k} L${el.x} ${el.y} M${m.x + 12 * k} ${m.y - 3 * k} L${er.x} ${er.y}`} stroke="#B0B8C1" strokeWidth={0.9 * k} />
+      <path d={`M${m.x - 15 * k} ${m.y - 3.5 * k} L${el.x} ${el.y} M${m.x + 15 * k} ${m.y - 3.5 * k} L${er.x} ${er.y}`} stroke="#B0B8C1" strokeWidth={0.9 * k} />
       <g transform={`translate(${m.x} ${m.y}) scale(${k})`}>
-        <path d="M-12.5 -5 Q0 -8.5 12.5 -5 L11.5 5 Q0 10.5 -11.5 5 Z" {...edge("#F7F9FC", 0.9)} />
-        <path d="M-10.5 -1.5 Q0 -4 10.5 -1.5 M-10.5 2.5 Q0 0.5 10.5 2.5" fill="none" stroke="#DCE1E7" strokeWidth="0.9" />
+        <path d="M-15.5 -5.5 Q0 -9 15.5 -5.5 L14 6 Q0 13.5 -14 6 Z" {...edge("#F7F9FC", 0.9)} />
+        <path d="M-13.5 -1.2 Q0 -4.4 13.5 -1.2 M-13 3.4 Q0 0.6 13 3.4 M-11.5 7.4 Q0 5.6 11.5 7.4" fill="none" stroke="#DCE1E7" strokeWidth="0.9" />
+        <path d="M-5 -6.4 Q0 -7.6 5 -6.4" fill="none" stroke="#C5CCD5" strokeWidth="1.1" strokeLinecap="round" />
       </g>
     </>
   ),
@@ -414,6 +436,20 @@ function Face({ id, a }: { id: string; a: Anchors }) {
         <path d={`M${e2.x} ${e2.y + r} q${3 * a.size} ${8 * a.size} ${-3 * a.size} ${15 * a.size}`} fill="none" stroke={GOLD_EDGE} strokeWidth={w * 0.6} />
       </>
     );
+  // see-through tinted lenses: the eyes still show, with a glint across each lens
+  if (id === "shades")
+    return (
+      <>
+        {a.eyes.map((e, i) => (
+          <g key={i}>
+            <rect x={e.x - r * 1.05} y={e.y - r * 0.78} width={r * 2.1} height={r * 1.56} rx={r * 0.55} fill="rgba(33,40,52,0.38)" stroke={INK} strokeWidth={w * 0.75} />
+            {/* the glint keeps to the corner, clear of the eye */}
+            <path d={`M${e.x - r * 0.8} ${e.y - r * 0.05} L${e.x - r * 0.5} ${e.y - r * 0.48}`} stroke="#fff" strokeWidth={w * 0.6} strokeLinecap="round" opacity="0.6" />
+          </g>
+        ))}
+        <path d={`M${e1.x + r * 1.05} ${e1.y - r * 0.2} Q${(e1.x + e2.x) / 2} ${e1.y - r * 0.6} ${e2.x - r * 1.05} ${e2.y - r * 0.2}`} fill="none" stroke={INK} strokeWidth={w} />
+      </>
+    );
   const goggles = id === "goggles";
   const rim = goggles ? "#1B64DA" : INK;
   return (
@@ -450,6 +486,27 @@ function Face({ id, a }: { id: string; a: Anchors }) {
 export function NeckLayer({ outfit, a }: { outfit?: Outfit; a: Anchors }) {
   const piece = outfit?.neck && NECK[outfit.neck];
   return piece ? <g transform={`translate(${a.neck.x} ${a.neck.y}) scale(${a.size})`}>{piece}</g> : null;
+}
+
+/**
+ * Asleep, the chin rests on the front paws: the neck piece moves with the head (`transform`) and whatever hangs from it
+ * tucks under the paws (cut off at their middle) instead of poking out below them. Place it just before the head group.
+ */
+export function SleepNeckLayer({ outfit, a, transform }: { outfit?: Outfit; a: Anchors; transform: string }) {
+  const id = `tuck${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  if (!outfit?.neck) return null;
+  return (
+    <>
+      <clipPath id={id}>
+        <rect x="-40" y="-60" width="200" height="147" />
+      </clipPath>
+      <g clipPath={`url(#${id})`}>
+        <g transform={transform}>
+          <NeckLayer outfit={outfit} a={a} />
+        </g>
+      </g>
+    </>
+  );
 }
 
 /** Draws what is worn on the face and head; place it last inside the head group so it moves with the head and lies on top. */

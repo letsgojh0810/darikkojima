@@ -8,6 +8,9 @@ export const isFullscreenBusy = () => invoke<boolean>("is_fullscreen_busy");
 /** seconds since the last keyboard or mouse input (0 on macOS for now) */
 export const idleSeconds = () => invoke<number>("idle_seconds");
 
+/** a mouse button is still down (always false on macOS for now) */
+export const mouseHeld = () => invoke<boolean>("mouse_held");
+
 export const openSettings = () => invoke("open_settings");
 
 export const quitApp = () => invoke("quit_app");

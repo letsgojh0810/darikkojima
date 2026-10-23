@@ -70,7 +70,7 @@ pub fn run() {
             None,
         ))
         .manage(HitRect::default())
-        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy, idle::idle_seconds, open_settings, quit_app])
+        .invoke_handler(tauri::generate_handler![set_hit_rect, fullscreen::is_fullscreen_busy, idle::idle_seconds, idle::mouse_held, open_settings, quit_app])
         .setup(|app| {
             // macOS: no Dock icon (like skipTaskbar on Windows), and the pet stays on every desktop (Space)
             #[cfg(target_os = "macos")]

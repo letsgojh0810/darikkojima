@@ -9,7 +9,13 @@ export function Sprite({ state, pet, children }: { state: PetState; pet: string;
       <svg width="120" height="100" viewBox="0 0 120 100">
         {children}
       </svg>
-      {state === "sleep" && <i className="zzz">z</i>}
+      {state === "sleep" && (
+        <i className="zzz">
+          <span>z</span>
+          <span>z</span>
+          <span>Z</span>
+        </i>
+      )}
     </div>
   );
 }

@@ -14,6 +14,23 @@ pub fn idle_seconds() -> u64 {
     }
 }
 
+/// Whether a mouse button is still down: a window drag hands the mouse to the OS, so the page never sees the release.
+/// Either physical button counts, so it also holds for swapped (left-handed) buttons.
+#[cfg(windows)]
+#[tauri::command]
+pub fn mouse_held() -> bool {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON, VK_RBUTTON};
+    // the high bit means "down right now"
+    unsafe { GetAsyncKeyState(VK_LBUTTON.0 as i32) < 0 || GetAsyncKeyState(VK_RBUTTON.0 as i32) < 0 }
+}
+
+/// shortcut: on macOS the drag ends when the window stops moving, as before; add it with CGEventSourceButtonState.
+#[cfg(not(windows))]
+#[tauri::command]
+pub fn mouse_held() -> bool {
+    false
+}
+
 /// shortcut: no away detection on macOS yet (it always looks present); add it with CGEventSourceSecondsSinceLastEventType.
 #[cfg(not(windows))]
 #[tauri::command]

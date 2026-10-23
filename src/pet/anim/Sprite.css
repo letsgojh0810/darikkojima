@@ -29,14 +29,23 @@
 .sprite-drag .arm.b { animation-direction: alternate-reverse; }
 .sprite-drag .tail { animation: wag 0.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 0% 100%; }
 
+/* three z's rising from the sleeping head, each a little bigger and higher */
 .zzz {
   position: absolute;
-  top: 4px;
-  right: 2px;
-  font: 700 18px/1 var(--font);
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  font-weight: 700;
+  font-family: var(--font);
   font-style: normal;
+  line-height: 1;
   color: #a39a92;
 }
+.zzz span { position: absolute; }
+.zzz span:nth-child(1) { left: 0; bottom: 0; font-size: 10px; opacity: 0.7; }
+.zzz span:nth-child(2) { left: 9px; bottom: 9px; font-size: 13px; opacity: 0.85; }
+.zzz span:nth-child(3) { left: 19px; bottom: 19px; font-size: 17px; }
 
 @keyframes fly { 0%, 100% { transform: translateY(-4px) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
 @keyframes flap { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }

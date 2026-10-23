@@ -105,7 +105,7 @@ describe("secrets and clothes", () => {
     expect(unlockedIds(1, [])).toHaveLength(11);
     expect(unlockedIds(1, [])).toContain("badge");
     expect(unlockedIds(5, [])).toHaveLength(22);
-    expect(unlockedIds(10, [])).toHaveLength(31);
+    expect(unlockedIds(10, [])).toHaveLength(32);
     expect(unlockedIds(10, TITLES.map((t) => t.id))).toHaveLength(ITEMS.length);
     expect(TITLES.every((t) => ITEMS.filter((it) => it.title === t.id).length === 1)).toBe(true);
     expect(wearable({ head: "crown", neck: "tie", face: "goggles" }, 3, [])).toEqual({ neck: "tie" });

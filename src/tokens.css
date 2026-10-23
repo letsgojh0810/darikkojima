@@ -13,7 +13,7 @@
   --text-2: #6b625b;
   --text-3: #a39a92;
   --line: #ede6de;
-  --accent: #e8603f;
+  --accent: #f17b5d;
   --accent-press: color-mix(in srgb, var(--accent) 85%, #000);
   --accent-weak: color-mix(in srgb, var(--accent) 12%, var(--surface));
   --red: #d93b4a;
