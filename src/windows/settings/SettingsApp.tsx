@@ -448,7 +448,21 @@ export function SettingsApp() {
       {tab === "remind" && (
       <div className="cols">
         <div className="col">
-          <Group title={t.reminders}>
+          {/* back to the default intervals; on/off and the user's own reminders stay as they are */}
+          <section>
+            <div className="h2row">
+              <h2>{t.reminders}</h2>
+              <button
+                className="text-btn"
+                disabled={ids.every((id) => s.reminders[id].intervalMin === defaultSettings.reminders[id].intervalMin)}
+                onClick={() =>
+                  update({ ...s, reminders: Object.fromEntries(ids.map((id) => [id, { ...s.reminders[id], intervalMin: defaultSettings.reminders[id].intervalMin }])) as Settings["reminders"] })
+                }
+              >
+                {t.intervalReset}
+              </button>
+            </div>
+            <div className="group">
             {ids.map((id) => (
               <Row key={id} label={reminderLabels[id]}>
                 <span className="unit">
@@ -483,7 +497,8 @@ export function SettingsApp() {
                 {t.add}
               </button>
             </div>
-          </Group>
+            </div>
+          </section>
 
           {/* the other things the pet says first: on/off chips, the full sentence on hover */}
           <Group title={t.talkTitle}>

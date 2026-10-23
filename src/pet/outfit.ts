@@ -1,5 +1,5 @@
 /**
- * Clothes: three slots (earphones count as head); about five items open at each of Lv.1, 5 and 10, and one per secret (pet/titles.ts).
+ * Clothes: three slots (earphones count as head); nine items open at each of Lv.1, 3, 5 and 10, and one per secret (pet/titles.ts).
  * Names live in messages/ko.ts; drawings in anim/Outfit.tsx.
  */
 export type Slot = "head" | "face" | "neck";
@@ -15,38 +15,46 @@ export interface Item {
 export const SLOTS: Slot[] = ["head", "face", "neck"];
 
 export const ITEMS: Item[] = [
+  // Lv.1: the office basics, to dress up from day one
   { id: "beanie", slot: "head", level: 1 },
-  { id: "flower", slot: "head", level: 1 },
+  { id: "headphones", slot: "head", level: 1 },
+  { id: "headphonesblack", slot: "head", level: 1 },
   { id: "glasses", slot: "face", level: 1 },
-  { id: "tie", slot: "neck", level: 1 },
-  { id: "bandana", slot: "neck", level: 1 },
-  { id: "badge", slot: "neck", level: 1 },
   { id: "cheeks", slot: "face", level: 1 },
   { id: "bandage", slot: "face", level: 1 },
+  { id: "badge", slot: "neck", level: 1 },
+  { id: "tie", slot: "neck", level: 1 },
   { id: "bell", slot: "neck", level: 1 },
-  { id: "eyepatch", slot: "face", level: 5 },
-  { id: "bowtie", slot: "neck", level: 5 },
+  // Lv.3: everyday bits
+  { id: "flower", slot: "head", level: 3 },
+  { id: "cap", slot: "head", level: 3 },
+  { id: "airpods", slot: "head", level: 3 },
+  { id: "hornrim", slot: "face", level: 3 },
+  { id: "freckles", slot: "face", level: 3 },
+  { id: "mask", slot: "face", level: 3 },
+  { id: "bandana", slot: "neck", level: 3 },
+  { id: "whistle", slot: "neck", level: 3 },
+  { id: "bow", slot: "neck", level: 3 },
+  // Lv.5: a trendier commute
   { id: "partyhat", slot: "head", level: 5 },
-  { id: "stars", slot: "face", level: 10 },
-  { id: "pearls", slot: "neck", level: 10 },
-  { id: "freckles", slot: "face", level: 1 },
-  { id: "whistle", slot: "neck", level: 1 },
-  { id: "mask", slot: "face", level: 5 },
-  { id: "camera", slot: "neck", level: 5 },
-  { id: "mustache", slot: "face", level: 10 },
-  { id: "chain", slot: "neck", level: 10 },
-  { id: "cap", slot: "head", level: 5 },
-  { id: "headphones", slot: "head", level: 5 },
   { id: "sunglasses", slot: "face", level: 5 },
-  { id: "airpods", slot: "head", level: 5 },
+  { id: "shades", slot: "face", level: 5 },
+  { id: "eyepatch", slot: "face", level: 5 },
+  { id: "handbag", slot: "neck", level: 5 },
+  { id: "crossbag", slot: "neck", level: 5 },
+  { id: "bowtie", slot: "neck", level: 5 },
+  { id: "camera", slot: "neck", level: 5 },
   { id: "scarf", slot: "neck", level: 5 },
-  { id: "bow", slot: "neck", level: 5 },
+  // Lv.10: the showy ones
   { id: "crown", slot: "head", level: 10 },
   { id: "wizard", slot: "head", level: 10 },
+  { id: "stars", slot: "face", level: 10 },
   { id: "heart", slot: "face", level: 10 },
   { id: "monocle", slot: "face", level: 10 },
+  { id: "mustache", slot: "face", level: 10 },
   { id: "medal", slot: "neck", level: 10 },
-  { id: "shades", slot: "face", level: 10 },
+  { id: "pearls", slot: "neck", level: 10 },
+  { id: "chain", slot: "neck", level: 10 },
   { id: "drop", slot: "head", title: "water10" },
   { id: "goggles", slot: "face", title: "water100" },
   { id: "book", slot: "head", title: "posture50" },
@@ -89,13 +97,15 @@ export interface Anchors {
   ears: [Pt, Pt];
   /** just under the nose, where a mustache sits and a mask is centred */
   mouth: Pt;
+  /** where over-ear headphone cups sit, when that is not `ears` (the dog's floppy ears hang below where they grow) */
+  cups?: [Pt, Pt];
   neck: Pt;
   size: number;
 }
 
 export const ANCHORS: Record<string, Anchors> = {
   cat: { top: { x: 60, y: 21 }, eyes: [{ x: 50, y: 42 }, { x: 70, y: 42 }], ears: [{ x: 33, y: 40 }, { x: 87, y: 40 }], mouth: { x: 60, y: 52 }, neck: { x: 60, y: 66 }, size: 1 },
-  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], mouth: { x: 60, y: 52.5 }, neck: { x: 60, y: 66 }, size: 1 },
+  dog: { top: { x: 60, y: 20 }, eyes: [{ x: 50, y: 40 }, { x: 70, y: 40 }], ears: [{ x: 33, y: 50 }, { x: 87, y: 50 }], cups: [{ x: 34.5, y: 38 }, { x: 85.5, y: 38 }], mouth: { x: 60, y: 52.5 }, neck: { x: 60, y: 66 }, size: 1 },
   rabbit: { top: { x: 60, y: 27 }, eyes: [{ x: 50, y: 46 }, { x: 70, y: 46 }], ears: [{ x: 35, y: 50 }, { x: 85, y: 50 }], mouth: { x: 60, y: 55 }, neck: { x: 60, y: 68 }, size: 0.95 },
   robot: { top: { x: 60, y: 22 }, eyes: [{ x: 50, y: 41 }, { x: 70, y: 41 }], ears: [{ x: 28, y: 42 }, { x: 92, y: 42 }], mouth: { x: 60, y: 51 }, neck: { x: 60, y: 65 }, size: 1.12 },
 };

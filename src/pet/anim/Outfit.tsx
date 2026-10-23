@@ -307,6 +307,28 @@ const NECK: Record<string, ReactNode> = {
       <rect x="4.6" y="11.6" width="2.4" height="1.6" rx="0.5" fill={GOLD} />
     </>
   ),
+  // a commuter's crossbody bag: the strap over the left shoulder and across the chest, a nylon bag with a flap at the right hip
+  crossbag: (
+    <>
+      <path d="M-15 -6 L18 9" stroke="#1E232A" strokeWidth="3.6" strokeLinecap="round" />
+      <path d="M-15 -6 L18 9" stroke="#3A4250" strokeWidth="2.2" strokeLinecap="round" />
+      <rect x="13" y="6" width="18" height="14" rx="3" {...edge("#3A4250", 0.9)} />
+      <path d="M13 9 Q13 6 16 6 H28 Q31 6 31 9 V12.5 Q22 15 13 12.5 Z" {...edge("#2F3642", 0.9)} />
+      <rect x="20.2" y="11.2" width="3.6" height="3" rx="0.8" {...edge("#C9CED6", 0.6)} />
+      <path d="M15.5 17.5 H28.5" stroke="#4E5968" strokeWidth="0.8" strokeDasharray="1.2 1" />
+    </>
+  ),
+  // an office shoulder bag: two handles up over the left shoulder, a soft beige leather tote with a gold turn-lock
+  handbag: (
+    <>
+      <path d="M-28 5.5 C-28 -3 -19 -7 -15 -6 M-18.5 5.5 C-18.5 0 -16.5 -4 -15 -6" fill="none" stroke="#9C6A47" strokeWidth="3" strokeLinecap="round" />
+      <path d="M-28 5.5 C-28 -3 -19 -7 -15 -6 M-18.5 5.5 C-18.5 0 -16.5 -4 -15 -6" fill="none" stroke="#C48A60" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M-30.5 5 H-15.5 L-13.2 20 Q-13 22.5 -15.5 22.5 H-30.5 Q-33 22.5 -32.8 20 Z" {...edge("#EBCBA9", 0.9)} />
+      <path d="M-31 9.5 H-15" stroke="#D9B18C" strokeWidth="0.9" />
+      <rect x="-24.7" y="8.6" width="3.4" height="2.8" rx="0.8" {...edge(GOLD, 0.6)} />
+      <path d="M-29 7 v12" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+    </>
+  ),
   chain: (
     <>
       {hang(13, 17, 19, -9).map(([x, y], i, all) => {
@@ -325,18 +347,70 @@ const NECK: Record<string, ReactNode> = {
  * Pieces that hang on both sides of the head (headphones, earphones), drawn in the pet's own coordinates from its
  * `ears` anchors so they fit each head's width.
  */
-const SIDES: Record<string, (a: Anchors) => ReactNode> = {
-  headphones: ({ ears: [l, r], top, size: k }) => (
-    <>
-      <path d={`M${l.x + 1} ${l.y - 4} C${l.x} ${top.y - 16 * k} ${r.x} ${top.y - 16 * k} ${r.x - 1} ${r.y - 4}`} fill="none" stroke="#333D4B" strokeWidth={4 * k} strokeLinecap="round" />
-      {[l, r].map((e, i) => (
-        <g key={i}>
-          <rect x={e.x - 5 * k} y={e.y - 8 * k} width={10 * k} height={15 * k} rx={4.5 * k} fill="#4E5968" />
-          <rect x={e.x - 2.5 * k} y={e.y - 5.5 * k} width={5 * k} height={10 * k} rx={2.5 * k} fill="#6B7684" />
-        </g>
-      ))}
-    </>
+/** the bags as they stand on the floor while their owner sleeps, (0, 0) at the middle of the bottom edge */
+const BAGS_DOWN: Record<string, ReactNode> = {
+  handbag: (
+    <g transform="translate(23 -22.5)">
+      <path d="M-28 5.5 C-28 -2 -18.5 -2 -18.5 5.5" fill="none" stroke="#9C6A47" strokeWidth="3" strokeLinecap="round" />
+      <path d="M-28 5.5 C-28 -2 -18.5 -2 -18.5 5.5" fill="none" stroke="#C48A60" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M-30.5 5 H-15.5 L-13.2 20 Q-13 22.5 -15.5 22.5 H-30.5 Q-33 22.5 -32.8 20 Z" {...edge("#EBCBA9", 0.9)} />
+      <path d="M-31 9.5 H-15" stroke="#D9B18C" strokeWidth="0.9" />
+      <rect x="-24.7" y="8.6" width="3.4" height="2.8" rx="0.8" {...edge(GOLD, 0.6)} />
+      <path d="M-29 7 v12" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+    </g>
   ),
+  crossbag: (
+    <g transform="translate(-22 -20)">
+      <path d="M15 7 C11 -4 33 -4 29 7" fill="none" stroke="#1E232A" strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M15 7 C11 -4 33 -4 29 7" fill="none" stroke="#3A4250" strokeWidth="2" strokeLinecap="round" />
+      <rect x="13" y="6" width="18" height="14" rx="3" {...edge("#3A4250", 0.9)} />
+      <path d="M13 9 Q13 6 16 6 H28 Q31 6 31 9 V12.5 Q22 15 13 12.5 Z" {...edge("#2F3642", 0.9)} />
+      <rect x="20.2" y="11.2" width="3.6" height="3" rx="0.8" {...edge("#C9CED6", 0.6)} />
+      <path d="M15.5 17.5 H28.5" stroke="#4E5968" strokeWidth="0.8" strokeDasharray="1.2 1" />
+    </g>
+  ),
+};
+
+/**
+ * AirPods Max: a thin steel frame over a mesh canopy, slim arms down to rounded aluminium cups with cushions toward the
+ * head, and the digital crown on top of the right cup. Outlined, so silver still reads on a white coat.
+ */
+const MAX_COLORS = {
+  silver: { line: "#8D95A1", frame: "#D9DDE3", canopy: "#EEF0F3", mesh: "#D3D8DE", cushion: "#C9CED6", shell: "#E4E7EB", shine: 0.8 },
+  black: { line: "#22262B", frame: "#7A808A", canopy: "#454A52", mesh: "#5C626C", cushion: "#33373D", shell: "#555B64", shine: 0.35 },
+};
+const maxPhones =
+  (c: (typeof MAX_COLORS)["silver"]) =>
+  ({ ears, cups, top, size: k }: Anchors) => {
+    const [l, r] = cups ?? ears;
+    // the frame rises from the top of each cup; the canopy hangs lower, from just inside it
+    const arc = (inset: number, drop: number, lift: number) =>
+      `M${l.x + inset * k} ${l.y - drop * k} C${l.x + inset * k} ${top.y - lift * k} ${r.x - inset * k} ${top.y - lift * k} ${r.x - inset * k} ${r.y - drop * k}`;
+    const frame = arc(0, 10, 22);
+    const canopy = arc(3, 8.5, 11);
+    return (
+      <>
+        <path d={frame} fill="none" stroke={c.line} strokeWidth={2.4 * k} strokeLinecap="round" />
+        <path d={frame} fill="none" stroke={c.frame} strokeWidth={1.2 * k} strokeLinecap="round" />
+        <path d={canopy} fill="none" stroke={c.line} strokeWidth={5.6 * k} strokeLinecap="round" />
+        <path d={canopy} fill="none" stroke={c.canopy} strokeWidth={4 * k} strokeLinecap="round" />
+        <path d={canopy} fill="none" stroke={c.mesh} strokeWidth={0.8 * k} strokeDasharray={`${0.8 * k} ${1.4 * k}`} />
+        {[l, r].map((e, i) => (
+          <g key={i}>
+            {/* the cushion shows as a soft band on the side facing the head */}
+            <rect x={e.x + (i ? -5.5 : 1.5) * k} y={e.y - 8 * k} width={4 * k} height={16 * k} rx={2 * k} {...edge(c.cushion, 0.8 * k)} />
+            <rect x={e.x - 5.5 * k} y={e.y - 9 * k} width={10 * k} height={18 * k} rx={4.6 * k} {...edge(c.shell, 0.9 * k)} />
+            <path d={`M${e.x - 3 * k} ${e.y - 5 * k} v${9 * k}`} stroke="#fff" strokeWidth={1.4 * k} strokeLinecap="round" opacity={c.shine} />
+            {i === 1 && <rect x={e.x - 2.5 * k} y={e.y - 11.6 * k} width={3.4 * k} height={2.8 * k} rx={0.8 * k} {...edge(c.frame, 0.6 * k)} />}
+          </g>
+        ))}
+      </>
+    );
+  };
+
+const SIDES: Record<string, (a: Anchors) => ReactNode> = {
+  headphones: maxPhones(MAX_COLORS.silver),
+  headphonesblack: maxPhones(MAX_COLORS.black),
   // white on white fur would vanish, so each bud gets a dark outline, a grey shaded side and a black speaker dot
   airpods: ({ ears, size: k }) =>
     ears.map((e, i) => (
@@ -436,6 +510,23 @@ function Face({ id, a }: { id: string; a: Anchors }) {
         <path d={`M${e2.x} ${e2.y + r} q${3 * a.size} ${8 * a.size} ${-3 * a.size} ${15 * a.size}`} fill="none" stroke={GOLD_EDGE} strokeWidth={w * 0.6} />
       </>
     );
+  // thick black acetate horn-rims, rounded-square and roomy so the eyes show whole, silver rivets at the corners
+  if (id === "hornrim") {
+    const lens = (e: { x: number; y: number }) => ({ x: e.x - r * 1.12, y: e.y - r * 0.92, width: r * 2.24, height: r * 1.84, rx: r * 0.66 });
+    return (
+      <>
+        <path d={`M${e1.x + r * 1.12} ${e1.y - r * 0.3} Q${(e1.x + e2.x) / 2} ${e1.y - r * 0.8} ${e2.x - r * 1.12} ${e2.y - r * 0.3}`} fill="none" stroke="#1E2228" strokeWidth={w * 1.5} strokeLinecap="round" />
+        {a.eyes.map((e, i) => (
+          <g key={i}>
+            <rect {...lens(e)} fill="rgba(255,255,255,0.05)" stroke="#1E2228" strokeWidth={w * 1.6} />
+            {/* a soft shine along the top of the rim, so it reads as glossy acetate */}
+            <path d={`M${e.x - r * 0.55} ${e.y - r * 0.92} H${e.x + r * 0.35}`} stroke="#5A616B" strokeWidth={w * 0.5} strokeLinecap="round" />
+            <circle cx={e.x + (i ? 1 : -1) * r * 0.86} cy={e.y - r * 0.62} r={w * 0.35} fill="#E5E8EB" />
+          </g>
+        ))}
+      </>
+    );
+  }
   // see-through tinted lenses: the eyes still show, with a glint across each lens
   if (id === "shades")
     return (
@@ -495,6 +586,8 @@ export function NeckLayer({ outfit, a }: { outfit?: Outfit; a: Anchors }) {
 export function SleepNeckLayer({ outfit, a, transform }: { outfit?: Outfit; a: Anchors; transform: string }) {
   const id = `tuck${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   if (!outfit?.neck) return null;
+  // a bag is taken off for the nap and set down on the floor beside the pet
+  if (BAGS_DOWN[outfit.neck]) return <g transform={`translate(9 96) scale(${0.9 * a.size})`}>{BAGS_DOWN[outfit.neck]}</g>;
   return (
     <>
       <clipPath id={id}>

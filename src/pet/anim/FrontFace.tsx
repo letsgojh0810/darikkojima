@@ -29,12 +29,22 @@ export function outline(hex: string) {
   return `#${rgb.toString(16).padStart(6, "0")}`;
 }
 
-/** A front paw with three toe lines; className "leg" lets it paddle while dragged. */
-export function Paw({ x, b, fill, edge }: { x: number; b?: boolean; fill: string; edge: string }) {
+/** Pink toe beans and the main pad, peeking from the front of a paw centred on (x, y). */
+export const Pads = ({ x, y }: { x: number; y: number }) => (
+  <g fill="#FFB1B4">
+    <ellipse cx={x - 3.5} cy={y - 1.6} rx="1.3" ry="1.1" />
+    <ellipse cx={x} cy={y - 2.2} rx="1.3" ry="1.1" />
+    <ellipse cx={x + 3.5} cy={y - 1.6} rx="1.3" ry="1.1" />
+    <ellipse cx={x} cy={y + 1.3} rx="2.9" ry="1.8" />
+  </g>
+);
+
+/** A front paw with three toe lines, or with toe beans (`pads`); className "leg" lets it paddle while dragged. */
+export function Paw({ x, b, fill, edge, pads }: { x: number; b?: boolean; fill: string; edge: string; pads?: boolean }) {
   return (
     <g className={b ? "leg b" : "leg"}>
       <ellipse cx={x} cy="90" rx="9" ry="5" fill={fill} stroke={edge} strokeWidth={LINE_W} />
-      <path d={`M${x - 3} 88.6 v3 M${x} 88 v3.6 M${x + 3} 88.6 v3`} stroke={outline(fill)} strokeWidth="0.9" strokeLinecap="round" />
+      {pads ? <Pads x={x} y={90} /> : <path d={`M${x - 3} 88.6 v3 M${x} 88 v3.6 M${x + 3} 88.6 v3`} stroke={outline(fill)} strokeWidth="0.9" strokeLinecap="round" />}
     </g>
   );
 }

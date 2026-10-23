@@ -1,6 +1,6 @@
 import { ANCHORS } from "../outfit";
 import { NeckLayer, OutfitLayer, SleepNeckLayer } from "./Outfit";
-import { FrontFace, Gloss, INK, LINE_W, Paw, SLEEP_HEAD, headDy, outline } from "./FrontFace";
+import { FrontFace, Gloss, INK, LINE_W, Pads, Paw, SLEEP_HEAD, headDy, outline } from "./FrontFace";
 import { Sprite } from "./Sprite";
 import type { PetAnimation } from "./types";
 import { useBlink } from "./useBlink";
@@ -44,8 +44,8 @@ export const DogAnim: PetAnimation = ({ state, muted, outfit, color }) => {
           {/* the head's shadow on the body, and a fluffy chest */}
           <ellipse cx="60" cy="62" rx="22" ry="6" fill={PATCH} opacity="0.45" />
           <path d="M45 78 q3.75 -4.5 7.5 0 q3.75 -4.5 7.5 0 q3.75 -4.5 7.5 0 q3.75 -4.5 7.5 0 Q76 90 60 93 Q44 90 45 78 Z" fill={MUZZLE} />
-          <Paw x={46} fill={MUZZLE} edge={line.stroke} />
-          <Paw x={74} b fill={MUZZLE} edge={line.stroke} />
+          <Paw x={46} fill={MUZZLE} edge={line.stroke} pads />
+          <Paw x={74} b fill={MUZZLE} edge={line.stroke} pads />
           <NeckLayer outfit={outfit} a={ANCHORS.dog} />
         </>
       )}
@@ -78,6 +78,8 @@ export const DogAnim: PetAnimation = ({ state, muted, outfit, color }) => {
         <>
           <ellipse cx="46" cy="90" rx="9" ry="4.6" fill={MUZZLE} {...line} />
           <ellipse cx="62" cy="91" rx="9" ry="4.6" fill={MUZZLE} {...line} />
+          <Pads x={46} y={90} />
+          <Pads x={62} y={91} />
         </>
       )}
     </Sprite>

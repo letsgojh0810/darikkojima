@@ -677,6 +677,7 @@ export const settingsText = {
   labelOptions: { both: "레벨+이름", name: "이름만", level: "레벨만", off: "끄기" },
   reminders: "알려줄 것들",
   every: "분마다",
+  intervalReset: "기본 시간으로",
   customPlaceholder: "알려줄 말 (예: 약 먹기)",
   hours: "알림 시간",
   work: "일하는 시간",
@@ -907,6 +908,10 @@ export const itemNames: Record<string, string> = {
   glasses: "안경",
   cap: "야구모자",
   headphones: "헤드폰",
+  headphonesblack: "헤드폰 블랙",
+  hornrim: "뿔테 안경",
+  handbag: "핸드백",
+  crossbag: "크로스백",
   sunglasses: "선글라스",
   shades: "틴트 선글라스",
   scarf: "목도리",
@@ -981,7 +986,7 @@ export const secretHints: Record<string, string> = {
 const itemGotLines = ["옷장에 새 옷이 생겼어요: {x}", "{x}, 입어 볼래요? 설정 → 성장에 있어요", "새 옷 {x}! 어울릴 것 같아요"];
 
 export const secretMessage = (id: string) => secretLines[id] ?? "깜짝 선물을 옷장에 넣어 뒀어요";
-/** several items open together at Lv.5 and Lv.10, so they are announced as one line */
+/** several items open together at Lv.3, 5 and 10, so they are announced as one line */
 export const itemGotMessage = (names: string[], rand: () => number = Math.random) =>
   names.length === 1
     ? pick(itemGotLines, rand).split("{x}").join(names[0])
@@ -1039,7 +1044,7 @@ export const accentNames: Record<string, string> = { coral: "코랄", blue: "블
 export const colorNames: Record<string, string> = {
   cheese: "치즈",
   gray: "회색",
-  tabby: "고등어",
+  calico: "삼색이",
   white: "흰둥이",
   golden: "누렁이",
   jindo: "백구",

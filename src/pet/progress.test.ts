@@ -101,11 +101,13 @@ describe("secrets and clothes", () => {
     expect(newTitles(p)).toEqual([]);
   });
 
-  it("opens a handful of items at Lv.1, 5 and 10, and one per secret", () => {
-    expect(unlockedIds(1, [])).toHaveLength(11);
+  it("opens nine items at each of Lv.1, 3, 5 and 10, and one per secret", () => {
+    expect(unlockedIds(1, [])).toHaveLength(9);
     expect(unlockedIds(1, [])).toContain("badge");
-    expect(unlockedIds(5, [])).toHaveLength(22);
-    expect(unlockedIds(10, [])).toHaveLength(32);
+    expect(unlockedIds(2, [])).toHaveLength(9);
+    expect(unlockedIds(3, [])).toHaveLength(18);
+    expect(unlockedIds(5, [])).toHaveLength(27);
+    expect(unlockedIds(10, [])).toHaveLength(36);
     expect(unlockedIds(10, TITLES.map((t) => t.id))).toHaveLength(ITEMS.length);
     expect(TITLES.every((t) => ITEMS.filter((it) => it.title === t.id).length === 1)).toBe(true);
     expect(wearable({ head: "crown", neck: "tie", face: "goggles" }, 3, [])).toEqual({ neck: "tie" });
