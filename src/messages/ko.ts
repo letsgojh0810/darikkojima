@@ -1100,6 +1100,8 @@ export const petQuips = {
     "다시 잔소리 모드예요",
   ],
   menuHint: "마우스 오른쪽 버튼을 누르면 설정이 열려요",
+  /** said while waving goodbye, just before the app quits from the menu */
+  bye: ["안녕히 가세요!", "또 만나요!", "오늘도 수고했어요. 안녕!", "다음에 또 놀아요!", "잘 가요~ 금방 다시 와요"],
 };
 
 export const oneOf = (xs: readonly string[], rand: () => number = Math.random) => pick(xs, rand);

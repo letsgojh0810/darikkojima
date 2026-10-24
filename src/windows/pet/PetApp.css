@@ -51,6 +51,24 @@ body,
   pointer-events: none;
 }
 
+/* quitting from the menu (PetApp LEAVE_MS = 1.8s): the pet sways goodbye twice, then hops a little and shrinks away;
+   the name tag and the goodbye line fade out with it at the very end */
+.stage.leaving { pointer-events: none; animation: stage-out 1.8s ease-in forwards; }
+.bye { transform-origin: 50% 100%; animation: bye 1.8s ease-in-out forwards; }
+@keyframes bye {
+  0% { transform: rotate(0); }
+  12% { transform: rotate(-8deg); }
+  26% { transform: rotate(8deg); }
+  40% { transform: rotate(-8deg); }
+  54% { transform: rotate(0); }
+  66% { transform: translateY(-10px) scale(1.04); opacity: 1; }
+  100% { transform: translateY(6px) scale(0.2); opacity: 0; }
+}
+@keyframes stage-out {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @keyframes tag-pop {
   0% { transform: scale(0.8); opacity: 0; }
   60% { transform: scale(1.1); opacity: 1; }

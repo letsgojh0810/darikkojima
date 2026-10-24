@@ -40,12 +40,15 @@ import { award, emptyProgress, LEVELS, levelOf, type Progress, type ProgressEven
 import { newTitles } from "../../pet/titles";
 import { usePetState } from "../../pet/usePetState";
 import { createScheduler } from "../../scheduler/scheduler";
-import { loadPetPos, loadProgress, loadSettings, savePetPos, saveProgress } from "../../store";
+import { enable as enableAutostart } from "@tauri-apps/plugin-autostart";
+import { loadPetPos, loadProgress, loadSettings, savePetPos, saveProgress, saveSettings } from "../../store";
 import { defaultSettings, type PetPreview, type ReminderId, type Settings } from "../../store/settings";
 import { startAutoUpdate } from "../../updater";
 import "../../tokens.css";
 import "./PetApp.css";
 
+/** how long the goodbye lasts before the app quits; matches the `bye` animation in PetApp.css */
+const LEAVE_MS = 1800;
 const GREET_GAP = 30 * 60_000; // restarting the app over and over does not greet over and over
 /**
  * no keyboard or mouse input for this long means the desk is empty: nothing is said, and the reminders start over on
@@ -134,7 +137,18 @@ export function PetApp() {
   const [edgeWorry, setEdgeWorry] = useState(false);
   const petRef = useRef<HTMLDivElement>(null);
   const [forced, setForced] = useState<PetState | null>(null); // dev-only: pins an animation so it can be looked at
-  const state: PetState = forced ?? (dragging ? (edgeWorry ? "nag" : "drag") : holding ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
+  // quitting from the menu: the pet waves goodbye with a line, then shrinks away, and only then does the app close
+  const [leaving, setLeaving] = useState(false);
+  const leave = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setMenu(false);
+    setNotices([]);
+    setLunch(null);
+    say(oneOf(petQuips.bye), 5000);
+    setTimeout(quitApp, LEAVE_MS);
+  };
+  const state: PetState = forced ?? (leaving ? "hover" : dragging ? (edgeWorry ? "nag" : "drag") : holding ? "drag" : clicked ? "click" : hover && base !== "nag" ? "hover" : base);
   const [petId, setPetId] = useState(defaultSettings.pet);
   const petIdRef = useRef(petId);
   petIdRef.current = petId;
@@ -191,6 +205,14 @@ export function PetApp() {
       setLunchMenus(loaded.lunchMenus);
       setPetProfiles(loaded.petProfiles);
       setPetLabel(loaded.petLabel);
+      // the first start of a fresh install turns on starting with Windows, once; a dev run must not register itself
+      if (!loaded.autostartDefaulted && !import.meta.env.DEV) {
+        settings = { ...loaded, autostartDefaulted: true };
+        settingsRef.current = settings;
+        enableAutostart()
+          .then(() => saveSettings(settings!))
+          .catch((err) => console.warn("autostart: could not switch on", err));
+      }
       applyAppearance(loaded.theme, loaded.accent);      loadProgress().then((p) => {
         if (cancelled) return;
         progressRef.current = p;
@@ -603,7 +625,7 @@ export function PetApp() {
   const showNotices = bubbleVisible && !lunch && notices.length > 0;
 
   return (
-    <div className="stage" ref={stage}>
+    <div className={leaving ? "stage leaving" : "stage"} ref={stage}>
       {bubbleVisible && lunch && (
         <LunchBubble
           menus={lunchMenus}
@@ -660,13 +682,14 @@ export function PetApp() {
             // the app itself
             { label: quiet ? petMenuText.quietOff : petMenuText.quietOn, divider: true, onSelect: () => setQuiet(!quiet) },
             { label: petMenuText.settings, onSelect: openSettings },
-            { label: petMenuText.quit, onSelect: quitApp, danger: true },
+            { label: petMenuText.quit, onSelect: leave, danger: true },
           ]}
         />
       )}
       {/* zoom (unlike transform) changes layout size, so the click-through hit rect follows it */}
       <div
         ref={petRef}
+        className={leaving ? "bye" : undefined}
         style={{ zoom: petScale, position: "relative" }}
         onMouseEnter={() => {
           setHover(true);

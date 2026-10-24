@@ -78,8 +78,16 @@ async function write(key: string, value: unknown): Promise<void> {
 
 export async function loadSettings(): Promise<Settings> {
   const saved = await read<Partial<Settings>>("settings");
+  // nothing saved on a PC that never saved: a fresh install, whose first start switches autostart on
+  // (nothing read on a PC that did save is a failed read, and must not touch the user's choice)
+  const fresh = saved === undefined && !savedBefore();
   // shortcut: shallow merge, except `moments`, which grows new switches (chatter); deep-merge more when another object does
-  return migrateSettings({ ...defaultSettings, ...saved, moments: { ...defaultSettings.moments, ...saved?.moments } });
+  return migrateSettings({
+    ...defaultSettings,
+    ...saved,
+    moments: { ...defaultSettings.moments, ...saved?.moments },
+    ...(fresh && { autostartDefaulted: false }),
+  });
 }
 
 export type Pos = { x: number; y: number };

@@ -4,7 +4,11 @@ body {
   color: var(--text-1);
   font: 500 14px/20px var(--font);
   letter-spacing: -0.01em;
+  /* Korean wraps between words, never inside one (a bigger Windows text size used to split "라이트" into 라이 / 트) */
+  word-break: keep-all;
 }
+/* a button's label is one line whatever the text size; the button grows to fit it */
+button { white-space: nowrap; }
 
 /* slim, rounded scrollbars in the same neutral tones as the rest (follows light/dark through the tokens) */
 *::-webkit-scrollbar { width: 12px; height: 12px; }
@@ -67,7 +71,7 @@ h1 { margin: 0 12px 16px; font-size: 20px; line-height: 28px; font-weight: 700; 
 .text-btn:disabled { color: var(--text-3); text-decoration: none; cursor: default; }
 
 .name-input { width: 150px; }
-.cal-name-input { flex: none; width: 92px; }
+.cal-name-input { flex: none; width: 108px; }
 .swatches { display: flex; gap: 8px; }
 .dev-chip { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #e5484d; color: #fff; font: 800 10px/14px var(--font); vertical-align: middle; }
 
@@ -139,7 +143,7 @@ html:has(.sheet-backdrop) { overflow: hidden; scrollbar-gutter: auto; }
 
 /* segmented choice: the picked one is a raised white chip */
 .seg { display: flex; flex: 1; gap: 2px; padding: 3px; border-radius: var(--r-sm); background: var(--surface-sub); }
-.seg button { flex: 1; height: 30px; border-radius: 8px; background: none; color: var(--text-2); font: 500 13px/1 var(--font); }
+.seg button { flex: 1 0 auto; height: 30px; padding: 0 10px; border-radius: 8px; background: none; color: var(--text-2); font: 500 13px/1 var(--font); }
 .seg button[aria-checked="true"] { background: var(--surface); color: var(--text-1); font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
 .seg button:active { transform: none; }
 

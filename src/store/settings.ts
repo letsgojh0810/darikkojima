@@ -52,6 +52,11 @@ export interface Settings {
   calendarLeadMin: number;
   /** when the app starts, list what is left on today's calendar */
   calendarDigest: boolean;
+  /**
+   * Starting with Windows is on by default, switched on once at the first start of a fresh install (false only then,
+   * see loadSettings). Afterwards it is the user's switch and the app never turns it back on.
+   */
+  autostartDefaulted: boolean;
 }
 
 /** coat colours that were renamed: the dog's colours became breeds (0.2.6), the tabby cat became the calico (0.2.5) */
@@ -110,4 +115,6 @@ export const defaultSettings: Settings = {
   icsNames: {},
   calendarLeadMin: 30,
   calendarDigest: true,
+  // true here so that 모두 초기화 and older saved settings (made before this switch existed) leave autostart as it is
+  autostartDefaulted: true,
 };

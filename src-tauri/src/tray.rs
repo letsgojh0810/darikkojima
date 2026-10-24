@@ -13,8 +13,10 @@ pub fn open_settings(app: &tauri::AppHandle) {
     std::thread::spawn(move || {
         let _ = WebviewWindowBuilder::new(&app, "settings", WebviewUrl::App("settings.html".into()))
             .title(if cfg!(debug_assertions) { "다리꼬지마 설정 (DEV)" } else { "다리꼬지마 설정" })
-            // measured: the tallest tabs are pet with its square cards (~514) and calendar with two calendars (508)
-            .inner_size(960.0, 520.0)
+            // room to spare for a bigger Windows text size (checked at 125%); it can be enlarged but not squeezed, as two
+            // columns of settings at a larger text size need this width
+            .inner_size(1000.0, 580.0)
+            .min_inner_size(1000.0, 580.0)
             .build();
     });
 }
