@@ -156,7 +156,7 @@ Intel Mac과 Linux는 아직 지원하지 않습니다.
 npm install
 npm run app            # 개발 실행: 설치한 앱과 따로 com.darikkojima.dev 이름으로 데이터를 쓰고, 자동 업데이트도 하지 않습니다
 npm test               # 단위 테스트 (vitest)
-npm run tauri build    # 설치 파일 빌드 (아래 서명 키 필요)
+npm run tauri build    # 설치 파일 빌드
 ```
 
 구조:
@@ -173,62 +173,6 @@ src-tauri       창, 트레이, 전체화면 감지(Win32), 플러그인 등록
 ```
 
 성능 목표: 유휴 시 프라이빗 메모리 약 180MB 이하, CPU 1% 미만(작업 관리자 전체 기준). 릴리스 빌드 실측은 메모리 약 170MB, CPU 약 0.1%입니다(펫 추가·드래그 동작 이전 측정). WebView2 특성상 100MB 미만은 어렵습니다.
-
-## 릴리스
-
-### 1. 업데이트 서명 키 만들기 (최초 1회)
-
-자동 업데이트는 서명된 파일만 설치합니다. 키는 한 번만 만들고, **개인키는 저장소에 올리지 마십시오.** 잃어버리면 기존 사용자에게 업데이트를 보낼 수 없습니다.
-
-```powershell
-npx tauri signer generate -w $env:USERPROFILE\.tauri\darikkojima.key
-```
-
-- 비밀번호를 물어보면 입력합니다(비워도 되지만 권장하지 않습니다).
-- `darikkojima.key`(개인키)와 `darikkojima.key.pub`(공개키)가 생깁니다.
-- 공개키 내용을 `src-tauri/tauri.conf.json`의 `plugins.updater.pubkey`에 넣습니다. 이미 들어 있는 값은 이 저장소의 키이므로, 키를 새로 만들면 교체해야 합니다.
-
-### 2. GitHub Secrets 등록
-
-저장소의 **Settings → Secrets and variables → Actions → New repository secret**에서 두 개를 추가합니다.
-
-| 이름 | 값 |
-|---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | `darikkojima.key` 파일의 **내용 전체** |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 키 비밀번호 (비밀번호가 없으면 등록하지 않아도 됩니다) |
-
-CLI로 등록하려면:
-
-```powershell
-Get-Content $env:USERPROFILE\.tauri\darikkojima.key -Raw | gh secret set TAURI_SIGNING_PRIVATE_KEY
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD   # 비밀번호가 없으면 이 줄은 건너뜁니다
-```
-
-### 3. 버전을 올리고 태그 push
-
-```powershell
-# package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, src-tauri/Cargo.lock(name = "darikkojima" 항목)의 version을 같은 값으로 올립니다
-git commit -am "chore: v0.1.2"
-git tag v0.1.2
-git push origin main v0.1.2
-```
-
-`v*` 태그를 push하면 `.github/workflows/release.yml`이 windows-latest에서 테스트 후 빌드하고, **draft** 릴리스에 `setup.exe`, `.sig`, `latest.json`을 올립니다.
-
-### 4. 릴리스 게시
-
-GitHub의 Releases에서 draft를 확인하고 **Publish release**를 누릅니다. 게시해야 앱이 `latest.json`을 읽고 업데이트합니다.
-
-> 업데이트 확인(`releases/latest/download/latest.json`)과 설치 파일 다운로드는 로그인 없이 접근할 수 있어야 하므로, 사용자에게 배포할 때는 저장소를 public으로 두어야 합니다.
-
-### 로컬에서 설치 파일 빌드
-
-```powershell
-$env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.tauri\darikkojima.key"
-$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""   # 키 비밀번호
-npm run tauri build
-# 결과: src-tauri\target\release\bundle\nsis\darikkojima_<버전>_x64-setup.exe
-```
 
 ## 범위 외
 
